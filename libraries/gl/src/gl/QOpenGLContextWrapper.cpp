@@ -53,11 +53,15 @@ void QOpenGLContextWrapper::setShareContext(QOpenGLContext* otherContext) {
     _context->setShareContext(otherContext);
 }
 
-bool isCurrentContext(QOpenGLContext* context) {
-    return QOpenGLContext::currentContext() == context;
+bool QOpenGLContextWrapper::isCurrentContext() const {
+    return QOpenGLContext::currentContext() == _context;
 }
 
-void QOpenGLContextWrapper::moveToThread(QThread* thread) {
+void QOpenGLContextWrapper::deleteLater() {
+    _context->deleteLater();
+    _context = nullptr;
+}
+
+void QOpenGLContextWrapper::moveToThread(QThread *thread) {
     _context->moveToThread(thread);
 }
-

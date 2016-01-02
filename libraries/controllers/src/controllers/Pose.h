@@ -11,8 +11,7 @@
 #ifndef hifi_controllers_Pose_h
 #define hifi_controllers_Pose_h
 
-class QScriptEngine;
-class QScriptValue;
+class QJSValue;
 
 #include <GLMHelpers.h>
 
@@ -41,9 +40,6 @@ namespace controller {
         vec3 getAngularVelocity() const { return angularVelocity; }
 
         Pose transform(const glm::mat4& mat) const;
-
-        static QScriptValue toScriptValue(QScriptEngine* engine, const Pose& event);
-        static void fromScriptValue(const QScriptValue& object, Pose& event);
     };
 }
 

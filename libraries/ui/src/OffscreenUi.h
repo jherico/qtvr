@@ -21,9 +21,9 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QInputDialog>
 
-#include <gl/OffscreenQmlSurface.h>
 #include <DependencyManager.h>
 
+#include "OffscreenQmlSurface.h"
 #include "OffscreenQmlElement.h"
 
 class VrMenu;
@@ -44,6 +44,7 @@ public:
     void setNavigationFocused(bool focused);
     void unfocusWindows();
     void toggleMenu(const QPoint& screenCoordinates);
+
     bool eventFilter(QObject* originalDestination, QEvent* event) override;
     void addMenuInitializer(std::function<void(VrMenu*)> f);
 

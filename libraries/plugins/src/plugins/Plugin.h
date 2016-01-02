@@ -29,8 +29,6 @@ public:
 
     virtual bool isSupported() const;
     
-    void setContainer(PluginContainer* container);
-
     /// Called when plugin is initially loaded, typically at application start
     virtual void init();
 
@@ -65,7 +63,5 @@ public:
 
 protected:
     bool _active { false };
-    PluginContainer* _container { nullptr };
     static QString UNKNOWN_PLUGIN_ID;
-
 };

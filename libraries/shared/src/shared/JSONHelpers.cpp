@@ -8,13 +8,13 @@
 
 #include "JSONHelpers.h"
 
+#include <QtCore/QJsonDocument>
 #include <QtCore/QJsonValue>
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
+#include <QtCore/QFile>
 
 #include <QtCore/qmetaobject.h>
-
-#include "../RegisteredMetaTypes.h"
 
 template <typename T> 
 QJsonValue glmToJson(const T& t) {
@@ -68,55 +68,20 @@ vec4 vec4FromJsonValue(const QJsonValue& v) {
     return glmFromJson<vec4>(v);
 }
 
-QJsonValue toJsonValue(const QObject& o) {
-    QJsonObject json{};
-
-    // Add all properties, see http://doc.qt.io/qt-5/qmetaobject.html#propertyCount
-    const auto& meta = o.metaObject();
-    for (int i = meta->propertyOffset(); i < meta->propertyCount(); ++i) {
-        QString name = QString::fromLatin1(meta->property(i).name());
-        auto type = meta->property(i).userType();
-        QVariant variant{ meta->property(i).read(&o) };
-        QJsonValue value;
-
-        // User-registered types need explicit conversion
-        if (type == qMetaTypeId<quat>()) {
-            value = toJsonValue(variant.value<quat>());
-        } else if (type == qMetaTypeId<vec3>()) {
-            value = toJsonValue(variant.value<vec3>());
-        } else if (type == qMetaTypeId<vec4>()) {
-            value = toJsonValue(variant.value<vec4>());
-        } else {
-            // Qt types are converted automatically
-            value = QJsonValue::fromVariant(variant);
-        }
-
-        json.insert(name, value);
+QJsonDocument jsonFromFile(const QString& filePath) {
+    QFile file(filePath);
+    if (!file.exists()) {
+        qDebug() << "Could not find file" << filePath;
+        return QJsonDocument();
     }
-
-    // Add all children (recursively)
-    const auto children = o.children();
-    for (const auto& child : children) {
-        QJsonObject childJson = toJsonValue(*child).toObject();
-        if (!childJson.empty()) {
-            json.insert(child->objectName(), childJson);
-        }
+    if (!file.open(QFile::ReadOnly)) {
+        qDebug() << "Could not open file" << filePath;
+        return QJsonDocument();
     }
-
-    return json;
+    auto byteArray = file.readAll();
+    return QJsonDocument::fromJson(byteArray);
 }
 
-void qObjectFromJsonValue(const QJsonValue& j, QObject& o) {
-    const QJsonObject object = j.toObject();
-    for (auto it = object.begin(); it != object.end(); it++) {
-        std::string key = it.key().toStdString();
-        if (it.value().isObject()) {
-            QObject* child = o.findChild<QObject*>(key.c_str(), Qt::FindDirectChildrenOnly);
-            if (child) {
-                qObjectFromJsonValue(it.value(), *child);
-            }
-        } else {
-            o.setProperty(key.c_str(), it.value());
-        }
-    }
+QJsonDocument jsonFromString(const QString& json) {
+    return QJsonDocument::fromJson(json.toUtf8());
 }

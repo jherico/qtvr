@@ -1,27 +1,55 @@
+//
+//  Created by Bradley Austin Davis on 2015/05/29
+//  Copyright 2015 High Fidelity, Inc.
+//
+//  Distributed under the Apache License, Version 2.0.
+//  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
+//
 #include "DisplayPlugin.h"
 
 #include <NumericalConstants.h>
 #include <ui/Menu.h>
 
-#include "PluginContainer.h"
+#include "PluginManager.h"
 
-bool DisplayPlugin::activate() {
-    if (isHmd() && (getHmdScreen() >= 0)) {
-        _container->showDisplayPluginsTools();
-    }
-    return Parent::activate();
+#include "impl/display/NullDisplayPlugin.h"
+#include "impl/display/stereo/SideBySideStereoDisplayPlugin.h"
+#include "impl/display/stereo/InterleavedStereoDisplayPlugin.h"
+#include "impl/display/Basic2DWindowOpenGLDisplayPlugin.h"
+
+
+const QString& DisplayPlugin::MENU_PATH() {
+    static const QString value = "Display";
+    return value;
 }
 
-void DisplayPlugin::deactivate() {
-    _container->showDisplayPluginsTools(false);
-    if (!_container->currentDisplayActions().isEmpty()) {
-        auto menu = _container->getPrimaryMenu();
-        foreach(auto itemInfo, _container->currentDisplayActions()) {
-            menu->removeMenuItem(itemInfo.first, itemInfo.second);
+// TODO migrate to a DLL model where plugins are discovered and loaded at runtime by the PluginManager class
+DisplayPluginList getDisplayPlugins() {
+    DisplayPlugin* PLUGIN_POOL[] = {
+        new Basic2DWindowOpenGLDisplayPlugin(),
+#ifdef DEBUG
+        new NullDisplayPlugin(),
+//        new DebugVrDisplayPlugin(),
+#endif
+        /*
+        // Stereo modes
+        // SBS left/right
+        new SideBySideStereoDisplayPlugin(),
+        // Interleaved left/right
+        new InterleavedStereoDisplayPlugin(),
+        */
+        nullptr
+    };
+
+    DisplayPluginList result;
+    for (int i = 0; PLUGIN_POOL[i]; ++i) {
+        DisplayPlugin * plugin = PLUGIN_POOL[i];
+        if (plugin->isSupported()) {
+            plugin->init();
+            result.push_back(DisplayPluginPointer(plugin));
         }
-        _container->currentDisplayActions().clear();
     }
-    Parent::deactivate();
+    return result;
 }
 
 int64_t DisplayPlugin::getPaintDelayUsecs() const {

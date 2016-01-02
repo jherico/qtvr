@@ -1,0 +1,299 @@
+{
+    "Shader": {
+        "info": {
+            "date": "1454028242",
+            "description": "An iterative blue noise generator that uses no tiles, no precomputation, no points, no voronoi, etc. Hit spacebar to reset to a naïve initial approximation using white noise. Try it in fullscreen.",
+            "flags": 48,
+            "hasliked": 0,
+            "id": "4dK3WR",
+            "likes": 4,
+            "name": "Iterative Blue Noise",
+            "published": 3,
+            "tags": [
+                "noise",
+                "blue",
+                "iterative",
+                "optimization",
+                "stochastic"
+            ],
+            "username": "cornusammonis",
+            "viewed": 105
+        },
+        "renderpass": [
+            {
+                "code": "void mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    vec2 uv = fragCoord.xy / iResolution.xy;\n    vec2 vMouse = iMouse.xy / iResolution.xy;\n    float on = texture2D(iChannel3, uv).x;\n\n    fragColor = vec4(on);\n}",
+                "description": "",
+                "inputs": [
+                    {
+                        "channel": 0,
+                        "ctype": "buffer",
+                        "id": 257,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer00.png"
+                    },
+                    {
+                        "channel": 1,
+                        "ctype": "buffer",
+                        "id": 258,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer01.png"
+                    },
+                    {
+                        "channel": 2,
+                        "ctype": "buffer",
+                        "id": 259,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer02.png"
+                    },
+                    {
+                        "channel": 3,
+                        "ctype": "buffer",
+                        "id": 260,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer03.png"
+                    }
+                ],
+                "name": "",
+                "outputs": [
+                    {
+                        "channel": "0"
+                    }
+                ],
+                "type": "image"
+            },
+            {
+                "code": "#define G(ic,x) texture2D(ic, x)\n#define iC0 iChannel0\n#define iC1 iChannel1\n#define iC2 iChannel2\n#define iC3 iChannel3\n#define o0 1.0\n#define o1 2.0\n\nfloat reset() {\n    return texture2D(iChannel3, vec2(32.5/256.0, 0.5) ).x;\n}\n\nfloat gaussian(vec2 x) {\n    return exp(-dot(x, x));\n}\n\n// These gaussian functions are all the same except for the texture component they use.\nfloat gaussianX(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).x + G(iC, fract(uv + o * (ix - iy))).x + G(iC, fract(uv + o * (- ix - iy))).x + G(iC, fract(uv + o * (- ix + iy))).x);\n    A += g1 * (G(iC, fract(uv + o * ix)).x + G(iC, fract(uv - o * ix)).x + G(iC, fract(uv + o * iy)).x + G(iC, fract(uv - o * iy)).x);\n    A += g0 * (G(iC, uv).x);\n    return A / sum;\n}\n\nfloat gaussianY(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).y + G(iC, fract(uv + o * (ix - iy))).y + G(iC, fract(uv + o * (- ix - iy))).y + G(iC, fract(uv + o * (- ix + iy))).y);\n    A += g1 * (G(iC, fract(uv + o * ix)).y + G(iC, fract(uv - o * ix)).y + G(iC, fract(uv + o * iy)).y + G(iC, fract(uv - o * iy)).y);\n    A += g0 * (G(iC, uv).y);\n    return A / sum;\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    vec2 uv = fragCoord.xy / iResolution.xy;\n    \n    //2 blur passes for the original image and the blue noise\n    float g2 = gaussian(vec2(1.0, 1.0));\n    float g1 = gaussian(vec2(1.0, 0.0));\n    float g0 = gaussian(vec2(0.0, 0.0));\n\n    float A0 = gaussianX(iC0, uv, o0, g0, g1, g2);\n    float B0 = gaussianX(iC2, uv, o0, g0, g1, g2);\n    float A1 = gaussianX(iC1, uv, o1, g0, g1, g2);\n    float B1 = gaussianY(iC1, uv, o1, g0, g1, g2);\n    \n    // a hack to get keyboard input in Buf D\n    if (reset() > 0.5) {\n        fragColor = vec4(A0, B0, 2.0, 2.0);    \n    } else {\n        fragColor = vec4(A0, B0, A1, B1);\n    }\n\n}",
+                "description": "",
+                "inputs": [
+                    {
+                        "channel": 0,
+                        "ctype": "texture",
+                        "id": 5,
+                        "sampler": {
+                            "filter": "mipmap",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "repeat"
+                        },
+                        "src": "/presets/tex04.jpg"
+                    },
+                    {
+                        "channel": 3,
+                        "ctype": "keyboard",
+                        "id": 33,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/tex00.jpg"
+                    },
+                    {
+                        "channel": 1,
+                        "ctype": "buffer",
+                        "id": 257,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer00.png"
+                    },
+                    {
+                        "channel": 2,
+                        "ctype": "buffer",
+                        "id": 260,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer03.png"
+                    }
+                ],
+                "name": "",
+                "outputs": [
+                    {
+                        "channel": "0"
+                    }
+                ],
+                "type": "buffer"
+            },
+            {
+                "code": "#define G(ic,x) texture2D(ic, x)\n#define iC0 iChannel0\n#define iC1 iChannel1\n#define iC2 iChannel2\n#define o0 4.0\n#define o1 8.0\n\nfloat gaussian(vec2 x) {\n    return exp(-dot(x, x));\n}\n\n// These gaussian functions are all the same except for the texture component they use.\nfloat gaussianX(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).x + G(iC, fract(uv + o * (ix - iy))).x + G(iC, fract(uv + o * (- ix - iy))).x + G(iC, fract(uv + o * (- ix + iy))).x);\n    A += g1 * (G(iC, fract(uv + o * ix)).x + G(iC, fract(uv - o * ix)).x + G(iC, fract(uv + o * iy)).x + G(iC, fract(uv - o * iy)).x);\n    A += g0 * (G(iC, uv).x);\n    return A / sum;\n}\n\nfloat gaussianY(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).y + G(iC, fract(uv + o * (ix - iy))).y + G(iC, fract(uv + o * (- ix - iy))).y + G(iC, fract(uv + o * (- ix + iy))).y);\n    A += g1 * (G(iC, fract(uv + o * ix)).y + G(iC, fract(uv - o * ix)).y + G(iC, fract(uv + o * iy)).y + G(iC, fract(uv - o * iy)).y);\n    A += g0 * (G(iC, uv).y);\n    return A / sum;\n}\n\nfloat gaussianZ(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).z + G(iC, fract(uv + o * (ix - iy))).z + G(iC, fract(uv + o * (- ix - iy))).z + G(iC, fract(uv + o * (- ix + iy))).z);\n    A += g1 * (G(iC, fract(uv + o * ix)).z + G(iC, fract(uv - o * ix)).z + G(iC, fract(uv + o * iy)).z + G(iC, fract(uv - o * iy)).z);\n    A += g0 * (G(iC, uv).z);\n    return A / sum;\n}\n\nfloat gaussianW(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).w + G(iC, fract(uv + o * (ix - iy))).w + G(iC, fract(uv + o * (- ix - iy))).w + G(iC, fract(uv + o * (- ix + iy))).w);\n    A += g1 * (G(iC, fract(uv + o * ix)).w + G(iC, fract(uv - o * ix)).w + G(iC, fract(uv + o * iy)).w + G(iC, fract(uv - o * iy)).w);\n    A += g0 * (G(iC, uv).w);\n    return A / sum;\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    vec2 uv = fragCoord.xy / iResolution.xy;\n    \n    //2 blur passes for the original image and the blue noise\n    float g2 = gaussian(vec2(1.0, 1.0));\n    float g1 = gaussian(vec2(1.0, 0.0));\n    float g0 = gaussian(vec2(0.0, 0.0));\n\n    float A0 = gaussianZ(iC0, uv, o0, g0, g1, g2);\n    float B0 = gaussianW(iC0, uv, o0, g0, g1, g2);\n    float A1 = gaussianX(iC1, uv, o1, g0, g1, g2);\n    float B1 = gaussianY(iC1, uv, o1, g0, g1, g2);\n    \n    fragColor = vec4(A0, B0, A1, B1);\n}",
+                "description": "",
+                "inputs": [
+                    {
+                        "channel": 0,
+                        "ctype": "buffer",
+                        "id": 257,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer00.png"
+                    },
+                    {
+                        "channel": 1,
+                        "ctype": "buffer",
+                        "id": 258,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer01.png"
+                    }
+                ],
+                "name": "",
+                "outputs": [
+                    {
+                        "channel": "0"
+                    }
+                ],
+                "type": "buffer"
+            },
+            {
+                "code": "#define G(ic,x) texture2D(ic, x)\n#define iC0 iChannel0\n#define iC1 iChannel1\n#define iC2 iChannel2\n#define o0 16.0\n#define o1 32.0\n\nfloat gaussian(vec2 x) {\n    return exp(-dot(x, x));\n}\n\n// These gaussian functions are all the same except for the texture component they use.\nfloat gaussianX(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).x + G(iC, fract(uv + o * (ix - iy))).x + G(iC, fract(uv + o * (- ix - iy))).x + G(iC, fract(uv + o * (- ix + iy))).x);\n    A += g1 * (G(iC, fract(uv + o * ix)).x + G(iC, fract(uv - o * ix)).x + G(iC, fract(uv + o * iy)).x + G(iC, fract(uv - o * iy)).x);\n    A += g0 * (G(iC, uv).x);\n    return A / sum;\n}\n\nfloat gaussianY(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).y + G(iC, fract(uv + o * (ix - iy))).y + G(iC, fract(uv + o * (- ix - iy))).y + G(iC, fract(uv + o * (- ix + iy))).y);\n    A += g1 * (G(iC, fract(uv + o * ix)).y + G(iC, fract(uv - o * ix)).y + G(iC, fract(uv + o * iy)).y + G(iC, fract(uv - o * iy)).y);\n    A += g0 * (G(iC, uv).y);\n    return A / sum;\n}\n\nfloat gaussianZ(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).z + G(iC, fract(uv + o * (ix - iy))).z + G(iC, fract(uv + o * (- ix - iy))).z + G(iC, fract(uv + o * (- ix + iy))).z);\n    A += g1 * (G(iC, fract(uv + o * ix)).z + G(iC, fract(uv - o * ix)).z + G(iC, fract(uv + o * iy)).z + G(iC, fract(uv - o * iy)).z);\n    A += g0 * (G(iC, uv).z);\n    return A / sum;\n}\n\nfloat gaussianW(sampler2D iC, vec2 uv, float o, float g0, float g1, float g2) {\n    vec2 ix = vec2(1.0 / iResolution.x, 0.0);\n    vec2 iy = vec2(0.0, 1.0 / iResolution.y);\n\n    float sum = 4.0 * (g2 + g1) + g0;\n    float A = g2 * (G(iC, fract(uv + o * (ix + iy))).w + G(iC, fract(uv + o * (ix - iy))).w + G(iC, fract(uv + o * (- ix - iy))).w + G(iC, fract(uv + o * (- ix + iy))).w);\n    A += g1 * (G(iC, fract(uv + o * ix)).w + G(iC, fract(uv - o * ix)).w + G(iC, fract(uv + o * iy)).w + G(iC, fract(uv - o * iy)).w);\n    A += g0 * (G(iC, uv).w);\n    return A / sum;\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    vec2 uv = fragCoord.xy / iResolution.xy;\n    \n    //2 blur passes for the original image and the blue noise\n    float g2 = gaussian(vec2(1.0, 1.0));\n    float g1 = gaussian(vec2(1.0, 0.0));\n    float g0 = gaussian(vec2(0.0, 0.0));\n\n    float A0 = gaussianZ(iC0, uv, o0, g0, g1, g2);\n    float B0 = gaussianW(iC0, uv, o0, g0, g1, g2);\n    float A1 = gaussianX(iC1, uv, o1, g0, g1, g2);\n    float B1 = gaussianY(iC1, uv, o1, g0, g1, g2);\n    \n    fragColor = vec4(A0, B0, A1, B1);\n}",
+                "description": "",
+                "inputs": [
+                    {
+                        "channel": 0,
+                        "ctype": "buffer",
+                        "id": 258,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer01.png"
+                    },
+                    {
+                        "channel": 1,
+                        "ctype": "buffer",
+                        "id": 259,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer02.png"
+                    }
+                ],
+                "name": "",
+                "outputs": [
+                    {
+                        "channel": "0"
+                    }
+                ],
+                "type": "buffer"
+            },
+            {
+                "code": "#define G(ic,x) texture2D(ic, x)\n#define iC0 iChannel0\n#define iC1 iChannel1\n#define iC2 iChannel2\n#define iC3 iChannel3\n\n// rate of change\n#define rate 0.001\n\n// exponential decay of rate of change\n// if this is not used (set to 0.0), the system will eventually begin to oscillate\n// (which looks interesting but ruins our noise distribution)\n#define decay 0.004\n\nvec2 wrap(vec2 x) {\n    return mod(mod(x, 1.0) + 1.0, 1.0);\n}\n\nfloat hash( vec2 p ) {\n    float h = dot(p,vec2(127.1,311.7)); \n    return fract(sin(h)*43758.5453123);\n}\n\n// hack to get keyboard input since we already use 4 iChannels for texture data\nfloat reset() {\n    return G(iC0, vec2(0.5)).zw == vec2(2.0) ? 1.0 : 0.0;\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord ) {\n    vec2 uv = fragCoord.xy / iResolution.xy;\n    \n    float rdm = hash(uv);\n    \n    float prevprob = G(iC3, uv).y;\n    float avgprob = G(iC3, uv).w;\n\n    float on = 0.0;\n    \n    vec2 i0 = G(iC0, uv).xz;\n    vec2 i1 = G(iC1, uv).xz;\n    vec2 i2 = G(iC2, uv).xz;\n    \n    vec2 v0 = G(iC0, uv).yw;\n    vec2 v1 = G(iC1, uv).yw;\n    vec2 v2 = G(iC2, uv).yw;\n    \n    vec2 w0 = vec2(1.0, 2.0);\n    vec2 w1 = vec2(4.0, 8.0);\n    vec2 w2 = vec2(16.0, 32.0);\n    \n    vec2 d0 = w0 * (i0 - v0);\n    vec2 d1 = w1 * (i1 - v1);\n    vec2 d2 = w2 * (i2 - v2);\n    \n    float resetTime = G(iC3, uv).z;\n    \n    float diff = rate * (d0.x + d0.y + d1.x + d1.y + d2.x + d2.y) / exp(decay * float(iFrame) - resetTime);\n    \n    float prob = clamp(prevprob + diff, 0.0, 1.0);\n    \n\n    if (iFrame < 10 || reset() > 0.5) {\n        if (rdm < i0.x) {\n            on = 1.0;    \n        }\n        resetTime = decay * float(iFrame);\n        fragColor = vec4(on, i0.x, resetTime, i0.x);\n    } else {\n        if (rdm < avgprob) {\n            on = 1.0;    \n        }\n        fragColor = vec4(on, prob, resetTime, avgprob * 0.99 + prob * 0.01);\n    }\n\n}",
+                "description": "",
+                "inputs": [
+                    {
+                        "channel": 0,
+                        "ctype": "buffer",
+                        "id": 257,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer00.png"
+                    },
+                    {
+                        "channel": 1,
+                        "ctype": "buffer",
+                        "id": 258,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer01.png"
+                    },
+                    {
+                        "channel": 2,
+                        "ctype": "buffer",
+                        "id": 259,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer02.png"
+                    },
+                    {
+                        "channel": 3,
+                        "ctype": "buffer",
+                        "id": 260,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/previz/buffer03.png"
+                    }
+                ],
+                "name": "",
+                "outputs": [
+                    {
+                        "channel": "0"
+                    }
+                ],
+                "type": "buffer"
+            }
+        ],
+        "ver": "0.1"
+    }
+}

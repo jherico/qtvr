@@ -244,6 +244,12 @@ public:
         }
 
         withLock([&]{
+            for (auto item : _releases) {
+                if (item._value == t) {
+                    qDebug() << t;
+                }
+                Q_ASSERT(item._value != t);
+            }
             _releases.push_back(Item(t, readSync));
         });
     }

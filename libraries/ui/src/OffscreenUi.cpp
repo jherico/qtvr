@@ -17,11 +17,7 @@
 
 #include <gl/GLHelpers.h>
 
-#include <AbstractUriHandler.h>
-#include <AccountManager.h>
-
 #include "FileDialogHelper.h"
-#include "VrMenu.h"
 
 
 // Needs to match the constants in resources/qml/Global.js
@@ -45,39 +41,6 @@ signals:
 
 private:
     bool _navigationFocused { false };
-};
-
-QString fixupHifiUrl(const QString& urlString) {
-	static const QString ACCESS_TOKEN_PARAMETER = "access_token";
-	static const QString ALLOWED_HOST = "metaverse.highfidelity.com";
-    QUrl url(urlString);
-	QUrlQuery query(url);
-	if (url.host() == ALLOWED_HOST && query.allQueryItemValues(ACCESS_TOKEN_PARAMETER).empty()) {
-	    AccountManager& accountManager = AccountManager::getInstance();
-	    query.addQueryItem(ACCESS_TOKEN_PARAMETER, accountManager.getAccountInfo().getAccessToken().token);
-	    url.setQuery(query.query());
-	    return url.toString();
-	}
-    return urlString;
-}
-
-class UrlHandler : public QObject {
-    Q_OBJECT
-public:
-    Q_INVOKABLE bool canHandleUrl(const QString& url) {
-        static auto handler = dynamic_cast<AbstractUriHandler*>(qApp);
-        return handler->canAcceptURL(url);
-    }
-
-    Q_INVOKABLE bool handleUrl(const QString& url) {
-        static auto handler = dynamic_cast<AbstractUriHandler*>(qApp);
-        return handler->acceptURL(url);
-    }
-    
-    // FIXME hack for authentication, remove when we migrate to Qt 5.6
-    Q_INVOKABLE QString fixupUrl(const QString& originalUrl) {
-        return fixupHifiUrl(originalUrl);
-    }
 };
 
 static OffscreenFlags* offscreenFlags { nullptr };
@@ -109,7 +72,6 @@ void OffscreenUi::create(QOpenGLContext* context) {
 
     rootContext->setContextProperty("OffscreenUi", this);
     rootContext->setContextProperty("offscreenFlags", offscreenFlags = new OffscreenFlags());
-    rootContext->setContextProperty("urlHandler", new UrlHandler());
     rootContext->setContextProperty("fileDialogHelper", new FileDialogHelper());
 }
 
@@ -295,20 +257,9 @@ private slots:
     }
 };
 
-QString OffscreenUi::getText(const Icon icon, const QString& title, const QString& label, const QString& text, bool* ok) {
-    if (ok) { *ok = false; }
-    QVariant result = DependencyManager::get<OffscreenUi>()->inputDialog(icon, title, label, text).toString();
-    if (ok && result.isValid()) {
-        *ok = true;
-    }
-    return result.toString();
-}
-
-QString OffscreenUi::getItem(const Icon icon, const QString& title, const QString& label, const QStringList& items,
-    int current, bool editable, bool* ok) {
-
-    if (ok) { 
-        *ok = false; 
+QString OffscreenUi::getItem(const Icon icon, const QString& title, const QString& label, const QStringList& items, int current, bool editable, bool* ok) {
+    if (ok) {
+        *ok = false;
     }
 
     auto offscreenUi = DependencyManager::get<OffscreenUi>();
@@ -458,11 +409,6 @@ void OffscreenUi::createDesktop(const QUrl& url) {
     getRootContext()->setContextProperty("desktop", _desktop);
 
     _toolWindow = _desktop->findChild<QQuickItem*>("ToolWindow");
-
-    _vrMenu = new VrMenu(this);
-    for (const auto& menuInitializer : _queuedMenuInitializers) {
-        menuInitializer(_vrMenu);
-    }
 
     new KeyboardFocusHack();
 
@@ -616,7 +562,7 @@ bool OffscreenUi::eventFilter(QObject* originalDestination, QEvent* event) {
 }
 
 unsigned int OffscreenUi::getMenuUserDataId() const {
-    return _vrMenu->_userDataId;
+    return 0; // _vrMenu->_userDataId;
 }
 
 #include "OffscreenUi.moc"

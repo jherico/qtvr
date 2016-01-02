@@ -16,12 +16,10 @@
 #include <QSettings>
 #include <QTimer>
 
-#include "shared/ReadWriteLockable.h"
-
 namespace Setting {
     class Interface;
 
-    class Manager : public QSettings, public ReadWriteLockable {
+    class Manager : public QSettings {
         Q_OBJECT
     protected:
         ~Manager();

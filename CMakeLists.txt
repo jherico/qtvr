@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
 
-if (USE_ANDROID_TOOLCHAIN)
-  set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/android/android.toolchain.cmake")
-  set(ANDROID_NATIVE_API_LEVEL 19)
-endif ()
-
 if (WIN32)
   cmake_policy(SET CMP0020 NEW)
 endif (WIN32)
@@ -21,10 +16,12 @@ if (POLICY CMP0042)
   cmake_policy(SET CMP0042 OLD)
 endif ()
 
+set(MAIN_APP_NAME exampleApp)
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakeTargets")
 
-project(hifi)
+project(core)
 add_definitions(-DGLM_FORCE_RADIANS)
 set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
@@ -89,47 +86,26 @@ if (APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --stdlib=libc++")
 endif ()
 
-if (NOT ANDROID_LIB_DIR)
-  set(ANDROID_LIB_DIR $ENV{ANDROID_LIB_DIR})
+if (NOT QT_CMAKE_PREFIX_PATH)
+  set(QT_CMAKE_PREFIX_PATH $ENV{QT_CMAKE_PREFIX_PATH})
 endif ()
-
-if (ANDROID)
-  if (NOT ANDROID_QT_CMAKE_PREFIX_PATH)
-    set(QT_CMAKE_PREFIX_PATH ${ANDROID_LIB_DIR}/Qt/5.4/android_armv7/lib/cmake)
-  else ()
-    set(QT_CMAKE_PREFIX_PATH ${ANDROID_QT_CMAKE_PREFIX_PATH})
-  endif ()
-
-  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-
-  if (ANDROID_LIB_DIR)
-    list(APPEND CMAKE_FIND_ROOT_PATH ${ANDROID_LIB_DIR})
-  endif ()
-else ()
-  if (NOT QT_CMAKE_PREFIX_PATH)
-    set(QT_CMAKE_PREFIX_PATH $ENV{QT_CMAKE_PREFIX_PATH})
-  endif ()
-  if (NOT QT_CMAKE_PREFIX_PATH)
-    get_filename_component(QT_CMAKE_PREFIX_PATH "${Qt5_DIR}/.." REALPATH)
-  endif ()
+if (NOT QT_CMAKE_PREFIX_PATH)
+  get_filename_component(QT_CMAKE_PREFIX_PATH "${Qt5_DIR}/.." REALPATH)
 endif ()
 
 set(QT_DIR $ENV{QT_DIR})
 
 if (WIN32)
-    if (NOT EXISTS ${QT_CMAKE_PREFIX_PATH})
-        message(FATAL_ERROR "Could not determine QT_CMAKE_PREFIX_PATH.")
-    endif ()
+  if (NOT EXISTS ${QT_CMAKE_PREFIX_PATH})
+      message(FATAL_ERROR "Could not determine QT_CMAKE_PREFIX_PATH.")
+  endif ()
 endif()
 
-# figure out where the qt dir is
 get_filename_component(QT_DIR "${QT_CMAKE_PREFIX_PATH}/../../" ABSOLUTE)
 
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${QT_CMAKE_PREFIX_PATH})
 
 if (APPLE)
-
   exec_program(sw_vers ARGS -productVersion  OUTPUT_VARIABLE OSX_VERSION)
   string(REGEX MATCH "^[0-9]+\\.[0-9]+" OSX_VERSION ${OSX_VERSION})
   message(STATUS "Detected OS X version = ${OSX_VERSION}")
@@ -189,59 +165,19 @@ foreach(CUSTOM_MACRO ${HIFI_CUSTOM_MACROS})
   include(${CUSTOM_MACRO})
 endforeach()
 
-if (ANDROID)
-  file(GLOB ANDROID_CUSTOM_MACROS "cmake/android/*.cmake")
-  foreach(CUSTOM_MACRO ${ANDROID_CUSTOM_MACROS})
-    include(${CUSTOM_MACRO})
-  endforeach()
-endif ()
-
 set(EXTERNAL_PROJECT_PREFIX "project")
 set_property(DIRECTORY PROPERTY EP_PREFIX ${EXTERNAL_PROJECT_PREFIX})
 setup_externals_binary_dir()
 
 option(USE_NSIGHT "Attempt to find the nSight libraries" 1)
 
-
 if (WIN32)
   add_paths_to_fixup_libs("${QT_DIR}/bin")
 endif ()
 
-if (NOT DEFINED SERVER_ONLY)
-  set(SERVER_ONLY 0)
-endif()
+# add subdirectories for all top level targets 
+# (libraries get pulled in automatically via dependencies)
+add_subdirectory(app)
+set_target_properties(${MAIN_APP_NAME} PROPERTIES FOLDER "Apps")
+add_subdirectory(plugins)
 
-set_packaging_parameters()
-
-# add subdirectories for all targets
-if (NOT ANDROID)
-  add_subdirectory(assignment-client)
-  set_target_properties(assignment-client PROPERTIES FOLDER "Apps")
-  add_subdirectory(domain-server)
-  set_target_properties(domain-server PROPERTIES FOLDER "Apps")
-  add_subdirectory(ice-server)
-  set_target_properties(ice-server PROPERTIES FOLDER "Apps")
-  add_subdirectory(server-console)
-  if (NOT SERVER_ONLY)
-    add_subdirectory(interface)
-    set_target_properties(interface PROPERTIES FOLDER "Apps")
-    add_subdirectory(tests)
-    add_subdirectory(plugins)
-  endif()
-  add_subdirectory(tools)
-endif()
-
-if (ANDROID OR DESKTOP_GVR)
-  add_subdirectory(gvr-interface)
-endif ()
-
-if (DEFINED ENV{HIFI_MEMORY_DEBUGGING})
-  SET( HIFI_MEMORY_DEBUGGING true )
-endif ()
-if (HIFI_MEMORY_DEBUGGING)
-  if (UNIX)
-    MESSAGE("-- Memory debugging is enabled")
-  endif (UNIX)
-endif ()
-
-generate_installers()
