@@ -15,12 +15,12 @@
 
 #include <QtCore/QSize>
 #include <QtCore/QPoint>
-class QImage;
 
 #include <GLMHelpers.h>
-#include <RegisteredMetaTypes.h>
 
 #include "Plugin.h"
+
+class QImage;
 
 enum Eye {
     Left,
@@ -51,16 +51,16 @@ class QWindow;
 #define AVERAGE_HUMAN_IPD 0.064f
 
 namespace gpu {
-    class Texture;
-    using TexturePointer = std::shared_ptr<Texture>;
+    using Texture = uint32_t;
+    using TexturePointer = uint32_t;
 }
 
 class DisplayPlugin : public Plugin {
     Q_OBJECT
     using Parent = Plugin;
 public:
-    bool activate() override;
-    void deactivate() override;
+    bool activate() override { return Parent::activate(); }
+    void deactivate() override { Parent::activate(); }
     virtual bool isHmd() const { return false; }
     virtual int getHmdScreen() const { return -1; }
     /// By default, all HMDs are stereo
@@ -113,7 +113,6 @@ public:
     virtual glm::mat4 getCullingProjection(const glm::mat4& baseProjection) const {
         return baseProjection;
     }
-
 
     // Fetch the most recently displayed image as a QImage
     virtual QImage getScreenshot() const = 0;

@@ -9,7 +9,7 @@
 #include "Filter.h"
 
 #include <QtCore/QObject>
-#include <QtScript/QScriptValue>
+#include <QtQml/QJSValue>
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>

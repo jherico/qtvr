@@ -15,6 +15,7 @@
 class QOpenGLContext;
 class QSurface;
 class QSurfaceFormat;
+class QThread;
 
 class QOpenGLContextWrapper {
 public:
@@ -25,6 +26,9 @@ public:
     bool makeCurrent(QSurface* surface);
     void doneCurrent();
     void setShareContext(QOpenGLContext* otherContext);
+    void moveToThread(QThread *thread);
+    bool isCurrentContext() const;
+    void deleteLater();
 
     static QOpenGLContext* currentContext();
 
@@ -36,7 +40,5 @@ public:
 private:
     QOpenGLContext* _context { nullptr };
 };
-
-bool isCurrentContext(QOpenGLContext* context);
 
 #endif // hifi_QOpenGLContextWrapper_h

@@ -13,21 +13,29 @@
 #include <mutex>
 #include <QtGui/QWindow>
 
-class QOpenGLContext;
+class QOpenGLContextWrapper;
 class QOpenGLDebugLogger;
 
 class GLWindow : public QWindow {
+    Q_OBJECT
 public:
+    GLWindow(QObject* parent = nullptr);
     virtual ~GLWindow();
     void createContext(QOpenGLContext* shareContext = nullptr);
     void createContext(const QSurfaceFormat& format, QOpenGLContext* shareContext = nullptr);
     bool makeCurrent();
     void doneCurrent();
     void swapBuffers();
-    QOpenGLContext* context() const;
+    QOpenGLContextWrapper* context() const;
+
+signals:
+    void aboutToClose();
+
 private:
+    friend class CloseEventFilter;
+    void emitClosing();
     std::once_flag _reportOnce;
-    QOpenGLContext* _context{ nullptr };
+    QOpenGLContextWrapper* _context{ nullptr };
 };
 
 #endif

@@ -10,7 +10,9 @@
 //
 
 #include "GLMHelpers.h"
+
 #include <glm/gtc/matrix_transform.hpp>
+
 #include "NumericalConstants.h"
 
 const vec3 Vectors::UNIT_X{ 1.0f, 0.0f, 0.0f };
@@ -339,11 +341,6 @@ glm::vec2 toGlm(const QPointF& pt) {
     return glm::vec2(pt.x(), pt.y());
 }
 
-glm::vec3 toGlm(const xColor& color) {
-    static const float MAX_COLOR = 255.0f;
-    return glm::vec3(color.red, color.green, color.blue) / MAX_COLOR;
-}
-
 glm::vec4 toGlm(const QColor& color) {
     return glm::vec4(color.redF(), color.greenF(), color.blueF(), color.alphaF());
 }
@@ -358,10 +355,6 @@ QMatrix4x4 fromGlm(const glm::mat4 & m) {
 
 QSize fromGlm(const glm::ivec2 & v) {
     return QSize(v.x, v.y);
-}
-
-vec4 toGlm(const xColor& color, float alpha) {
-    return vec4((float)color.red / 255.0f, (float)color.green / 255.0f, (float)color.blue / 255.0f, alpha);
 }
 
 QRectF glmToRect(const glm::vec2 & pos, const glm::vec2 & size) {

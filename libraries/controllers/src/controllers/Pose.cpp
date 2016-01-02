@@ -6,10 +6,8 @@
 //  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
 //
 
-#include <QtScript/QScriptEngine>
-#include <QtScript/QScriptValue>
 
-#include <RegisteredMetaTypes.h>
+#include <QtQml/QJSValue>
 
 #include "Pose.h"
 
@@ -28,36 +26,6 @@ namespace controller {
         // FIXME add margin of error?  Or add an additional withinEpsilon function?
         return translation == right.getTranslation() && rotation == right.getRotation() &&
             velocity == right.getVelocity() && angularVelocity == right.getAngularVelocity();
-    }
-
-    QScriptValue Pose::toScriptValue(QScriptEngine* engine, const Pose& pose) {
-        QScriptValue obj = engine->newObject();
-        obj.setProperty("translation", vec3toScriptValue(engine, pose.translation));
-        obj.setProperty("rotation", quatToScriptValue(engine, pose.rotation));
-        obj.setProperty("velocity", vec3toScriptValue(engine, pose.velocity));
-        obj.setProperty("angularVelocity", vec3toScriptValue(engine, pose.angularVelocity));
-        obj.setProperty("valid", pose.valid);
-
-        return obj;
-    }
-
-    void Pose::fromScriptValue(const QScriptValue& object, Pose& pose) {
-        auto translation = object.property("translation");
-        auto rotation = object.property("rotation");
-        auto velocity = object.property("velocity");
-        auto angularVelocity = object.property("angularVelocity");
-        if (translation.isValid() &&
-                rotation.isValid() &&
-                velocity.isValid() &&
-                angularVelocity.isValid()) {
-            vec3FromScriptValue(translation, pose.translation);
-            quatFromScriptValue(rotation, pose.rotation);
-            vec3FromScriptValue(velocity, pose.velocity);
-            vec3FromScriptValue(angularVelocity, pose.angularVelocity);
-            pose.valid = true;
-        } else {
-            pose.valid = false;
-        }
     }
 
     Pose Pose::transform(const glm::mat4& mat) const {

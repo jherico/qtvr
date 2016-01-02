@@ -19,7 +19,7 @@
 #include "../Input.h"
 #include "../Pose.h"
 
-class QScriptValue;
+class QJSValue;
 
 namespace controller {
     /*

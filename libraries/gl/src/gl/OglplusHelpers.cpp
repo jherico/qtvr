@@ -11,6 +11,16 @@
 #include <oglplus/shapes/plane.hpp>
 #include <oglplus/shapes/sky_box.hpp>
 
+#include <QtCore/QUrl>
+#include <QtGui/QImage>
+#include <QGLWidget>
+
+#include <oglplus/shapes/sky_box.hpp>
+#include <oglplus/shapes/sphere.hpp>
+
+#include <Platform.h>
+#include <FileUtils.h>
+
 using namespace oglplus;
 using namespace oglplus::shapes;
 
@@ -105,11 +115,10 @@ void compileProgram(ProgramPtr & result, const std::string& vs, const std::strin
         Q_UNUSED(err);
         qWarning() << err.Log().c_str();
         Q_ASSERT_X(false, "compileProgram", "Failed to build shader program");
-        qFatal("%s", (const char*) err.Message);
+        qFatal("%s", (const char*)err.Message);
         result.reset();
     }
 }
-
 
 ShapeWrapperPtr loadPlane(ProgramPtr program, float aspect) {
     using namespace oglplus;
@@ -136,7 +145,6 @@ static glm::vec3 getPoint(float yaw, float pitch) {
         glm::cos(-pitch) * (-glm::cos(yaw)));
 }
 
-
 class SphereSection : public DrawingInstructionWriter, public DrawMode {
 public:
     using IndexArray = std::vector<GLuint>;
@@ -148,7 +156,7 @@ public:
     // vertex tex coords
     TexArray _tex_data;
     IndexArray _idx_data;
-    unsigned int _prim_count{ 0 };
+    unsigned int _prim_count { 0 };
 
 public:
     SphereSection(
@@ -205,7 +213,7 @@ public:
         --gridSize;
         int quads = gridSize * gridSize;
         for (int t = 0; t < quads; ++t) {
-            int x = 
+            int x =
                 ((t & 0x0001) >> 0) |
                 ((t & 0x0004) >> 1) |
                 ((t & 0x0010) >> 2) |
@@ -214,7 +222,7 @@ public:
                 ((t & 0x0400) >> 5) |
                 ((t & 0x1000) >> 6) |
                 ((t & 0x4000) >> 7);
-            int y = 
+            int y =
                 ((t & 0x0002) >> 1) |
                 ((t & 0x0008) >> 2) |
                 ((t & 0x0020) >> 3) |
@@ -223,7 +231,7 @@ public:
                 ((t & 0x0800) >> 6) |
                 ((t & 0x2000) >> 7) |
                 ((t & 0x8000) >> 8);
-            int i = x * (rowLen) + y;
+            int i = x * (rowLen)+y;
 
             _idx_data.push_back(i);
             _idx_data.push_back(i + 1);
@@ -352,11 +360,11 @@ public:
     }
 };
 
-ShapeWrapperPtr loadSphereSection(ProgramPtr program, float fov, float aspect, int slices, int stacks) {
+ShapeWrapperPtr loadSphereSection(const ProgramPtr& program, float fov, float aspect, int slices, int stacks) {
     using namespace oglplus;
     return ShapeWrapperPtr(
         new shapes::ShapeWrapper({ "Position", "TexCoord" }, SphereSection(fov, aspect, slices, stacks), *program)
-    );
+        );
 }
 
 void TextureRecycler::setSize(const uvec2& size) {
@@ -400,7 +408,7 @@ TexturePtr TextureRecycler::getNextTexture() {
             0, PixelDataFormat::RGB, PixelDataType::UnsignedByte, nullptr
             );
         GLuint texId = GetName(*newTexture);
-        _allTextures[texId] = TexInfo{ newTexture, _size };
+        _allTextures[texId] = TexInfo { newTexture, _size };
         _readyTextures.push(newTexture);
     }
 
@@ -409,6 +417,7 @@ TexturePtr TextureRecycler::getNextTexture() {
 
     GLuint texId = GetName(*result);
     auto& item = _allTextures[texId];
+    Q_ASSERT(!item._active);
     item._active = true;
 
     return result;
@@ -428,3 +437,191 @@ void TextureRecycler::recycleTexture(GLuint texture) {
     _readyTextures.push(item._tex);
 }
 
+struct TextureInfo {
+    uvec2 size;
+    TexturePtr tex;
+};
+
+typedef std::map<QUrl, TextureInfo> TextureMap;
+typedef TextureMap::iterator TextureMapItr;
+
+void loadImage(const QString& path, ImagePtr& imagePtr, bool flip) {
+    QImage image = QImage(path).mirrored(false, true);
+    image = QGLWidget::convertToGLFormat(image);
+    using namespace oglplus;
+    size_t width = image.width();
+    size_t height = image.height();
+    PixelDataFormat format = PixelDataFormat::RGB;
+    if (image.hasAlphaChannel()) {
+        format = PixelDataFormat::RGBA;
+    }
+    imagePtr = std::make_shared<oglplus::images::Image>(width, height, 1, 3,
+        image.constBits(), format, PixelDataInternalFormat::RGBA8);
+}
+
+TextureMap & getTextureMap() {
+    static TextureMap map;
+    static bool registeredShutdown = false;
+    if (!registeredShutdown) {
+        Platform::addShutdownHook([&] {
+            map.clear();
+        });
+        registeredShutdown = true;
+    }
+
+    return map;
+}
+
+template <typename T, typename F>
+T loadOrPopulate(std::map<QString, T> & map, const QString& resource, F loader) {
+    if (!map.count(resource)) {
+        map[resource] = loader();
+    }
+    return map[resource];
+}
+
+//TextureInfo load2dTextureInternal(const std::vector<uint8_t> & data) {
+//  using namespace oglplus;
+//  TextureInfo result;
+//  result.tex = TexturePtr(new Texture());
+//  Context::Bound(TextureTarget::_2D, *result.tex)
+//    .MagFilter(TextureMagFilter::Linear)
+//    .MinFilter(TextureMinFilter::Linear);
+//  ImagePtr image = loadImage(data);
+//  result.size.x = image->Width();
+//  result.size.y = image->Height();
+//  // FIXME detect alignment properly, test on both OpenCV and LibPNG
+//  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+//  Texture::Image2D(TextureTarget::_2D, *image);
+//  return result;
+//}
+TexturePtr load2dTexture(const QString& path) {
+    uvec2 outSize;
+    return load2dTexture(path, outSize);
+}
+
+TexturePtr load2dTexture(const QString& path, uvec2 & outSize) {
+    QImage image = QImage(path).mirrored(false, true);
+    image = QGLWidget::convertToGLFormat(image);
+    using namespace oglplus;
+    outSize.x = image.width();
+    outSize.y = image.height();
+    PixelDataFormat format = PixelDataFormat::RGB;
+    if (image.hasAlphaChannel()) {
+        format = PixelDataFormat::RGBA;
+    }
+    TexturePtr result(new oglplus::Texture());
+    Context::Bound(Texture::Target::_2D, *result)
+        .Image2D(0, PixelDataInternalFormat::RGBA8, outSize.x, outSize.y, 0, format, PixelDataType::UnsignedByte, image.constBits())
+        .GenerateMipmap()
+        .MinFilter(TextureMinFilter::Linear)
+        .MagFilter(TextureMagFilter::Linear)
+        .WrapS(TextureWrap::ClampToEdge)
+        .WrapT(TextureWrap::ClampToEdge);
+    return result;
+}
+
+TexturePtr loadCubemapTexture(std::function<QImage(int face)> dataLoader) {
+    using namespace oglplus;
+    TexturePtr result = TexturePtr(new Texture());
+    Context::Bound(TextureTarget::CubeMap, *result)
+        .MagFilter(TextureMagFilter::Linear)
+        .MinFilter(TextureMinFilter::Linear)
+        .WrapS(TextureWrap::ClampToEdge)
+        .WrapT(TextureWrap::ClampToEdge)
+        .WrapR(TextureWrap::ClampToEdge);
+    for (int i = 0; i < 6; ++i) {
+        QImage image = dataLoader(i);
+        image = QGLWidget::convertToGLFormat(image);
+        PixelDataFormat format = PixelDataFormat::RGB;
+        if (image.hasAlphaChannel()) { format = PixelDataFormat::RGBA; }
+        Texture::Image2D(Texture::CubeMapFace(i), 0, PixelDataInternalFormat::RGBA8, image.width(), image.height(), 0, format, PixelDataType::UnsignedByte, image.constBits());
+    }
+    return result;
+}
+
+
+ShapeWrapperPtr loadSkybox(const ProgramPtr& program) {
+    using namespace oglplus;
+    ShapeWrapperPtr shape = ShapeWrapperPtr(
+        new shapes::ShapeWrapper(std::initializer_list<const char*>{"Position"}, shapes::SkyBox(),
+        *program));
+    return shape;
+}
+
+ShapeWrapperPtr loadPlane(const ProgramPtr& program, float aspect) {
+    using namespace oglplus;
+    Vec3f a(1, 0, 0);
+    Vec3f b(0, 1, 0);
+    if (aspect > 1) {
+        b[1] /= aspect;
+    } else {
+        a[0] *= aspect;
+    }
+    return ShapeWrapperPtr(
+        new shapes::ShapeWrapper({ "Position", "TexCoord" },
+        shapes::Plane(a, b), *program));
+}
+
+ShapeWrapperPtr loadSphere(const std::initializer_list<const GLchar*>& names, ProgramPtr program) {
+    using namespace oglplus;
+    return ShapeWrapperPtr(
+        new shapes::ShapeWrapper(names, shapes::Sphere(), *program));
+}
+
+
+
+ProgramPtr loadProgram(const QString& vsFile, const QString& fsFile) {
+    ProgramPtr result;
+    compileProgram(result,
+        FileUtils::readFileToString(vsFile).toUtf8().data(),
+        FileUtils::readFileToString(fsFile).toUtf8().data());
+    return result;
+}
+
+UniformMap getActiveUniforms(ProgramPtr & program) {
+    UniformMap activeUniforms;
+    auto uniformCount = program->ActiveUniforms().Size();
+    for (uint32_t i = 0; i < uniformCount; ++i) {
+        std::string name = program->ActiveUniforms().At(i).Name();
+        activeUniforms[name] = program->ActiveUniforms().At(i).Index();
+    }
+    return activeUniforms;
+}
+
+template <typename Iter>
+void renderGeometryWithLambdas(ShapeWrapperPtr & shape, ProgramPtr & program, Iter begin, const Iter & end) {
+    program->Use();
+
+    Mat4Uniform(*program, "ModelView").Set(Stacks::modelview().top());
+    Mat4Uniform(*program, "Projection").Set(Stacks::projection().top());
+
+    std::for_each(begin, end, [&](const std::function<void()>&f) {
+        f();
+    });
+
+    auto err = glGetError();
+    shape->Use();
+    err = glGetError();
+    shape->Draw();
+    err = glGetError();
+
+    oglplus::NoProgram().Bind();
+    oglplus::NoVertexArray().Bind();
+}
+
+void renderGeometry(ShapeWrapperPtr & shape, ProgramPtr & program, std::function<void()> lambda) {
+    renderGeometry(shape, program, LambdaList({ lambda }));
+}
+
+void renderGeometry(ShapeWrapperPtr & shape, ProgramPtr & program, const std::list<std::function<void()>> & list) {
+    renderGeometryWithLambdas(shape, program, list.begin(), list.end());
+}
+
+#if 0
+
+void renderGeometry(ShapeWrapperPtr & shape, ProgramPtr & program) {
+    static const std::list<std::function<void()>> EMPTY_LIST;
+    renderGeometryWithLambdas(shape, program, EMPTY_LIST.begin(), EMPTY_LIST.end());
+}
+#endif

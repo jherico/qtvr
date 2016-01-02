@@ -18,7 +18,7 @@
 #include "../UserInputMapper.h"
 
 class QJSValue;
-class QScriptValue;
+class QJSValue;
 class QJsonValue;
 
 namespace controller {
@@ -36,10 +36,10 @@ class RouteBuilderProxy : public QObject {
         Q_INVOKABLE void toQml(const QJSValue& destination);
         Q_INVOKABLE QObject* whenQml(const QJSValue& expression);
 
-        Q_INVOKABLE void to(const QScriptValue& destination);
+        Q_INVOKABLE void to(const QJSValue& destination);
         Q_INVOKABLE QObject* debug(bool enable = true);
         Q_INVOKABLE QObject* peek(bool enable = true);
-        Q_INVOKABLE QObject* when(const QScriptValue& expression);
+        Q_INVOKABLE QObject* when(const QJSValue& expression);
         Q_INVOKABLE QObject* clamp(float min, float max);
         Q_INVOKABLE QObject* hysteresis(float min, float max);
         Q_INVOKABLE QObject* pulse(float interval);

@@ -16,7 +16,7 @@
 #include "Endpoint.h"
 
 class QJSValue;
-class QScriptValue;
+class QJSValue;
 class QJsonValue;
 
 namespace controller {
@@ -35,8 +35,8 @@ public:
     Q_INVOKABLE QObject* fromQml(const QJSValue& source);
     Q_INVOKABLE QObject* makeAxisQml(const QJSValue& source1, const QJSValue& source2);
 
-    Q_INVOKABLE QObject* from(const QScriptValue& source);
-    Q_INVOKABLE QObject* makeAxis(const QScriptValue& source1, const QScriptValue& source2);
+    Q_INVOKABLE QObject* from(const QJSValue& source);
+    Q_INVOKABLE QObject* makeAxis(const QJSValue& source1, const QJSValue& source2);
 
     Q_INVOKABLE QObject* enable(bool enable = true);
     Q_INVOKABLE QObject* disable() { return enable(false); }

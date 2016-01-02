@@ -29,18 +29,14 @@ namespace Setting {
 
     void Manager::registerHandle(Setting::Interface* handle) {
         QString key = handle->getKey();
-        withWriteLock([&] {
-            if (_handles.contains(key)) {
-                qWarning() << "Setting::Manager::registerHandle(): Key registered more than once, overriding: " << key;
-            }
-            _handles.insert(key, handle);
-        });
+        if (_handles.contains(key)) {
+            qWarning() << "Setting::Manager::registerHandle(): Key registered more than once, overriding: " << key;
+        }
+        _handles.insert(key, handle);
     }
 
     void Manager::removeHandle(const QString& key) {
-        withWriteLock([&] {
-            _handles.remove(key);
-        });
+        _handles.remove(key);
     }
 
     void Manager::loadSetting(Interface* handle) {
@@ -74,11 +70,9 @@ namespace Setting {
     }
 
     void Manager::saveAll() {
-        withReadLock([&] {
-            for (auto handle : _handles) {
-                saveSetting(handle);
-            }
-        });
+        for (auto handle : _handles) {
+            saveSetting(handle);
+        }
 
         // Restart timer
         if (_saveTimer) {

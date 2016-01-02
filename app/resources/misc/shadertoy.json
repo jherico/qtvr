@@ -1,0 +1,45 @@
+{
+    "Shader": 
+    {
+        "ver": "0.1",
+        "info": 
+        {
+            "id": "default",
+            "date": "0",
+            "viewed": 0,
+            "name": "Default Shader",
+            "username": "jherico",
+            "description": "Just a default shader",
+            "likes": 0,
+            "published": 0,
+            "flags": 0,
+            "hasliked": 0,
+            "tags": 
+            [
+                
+            ]
+        },
+
+        "renderpass": 
+        [
+            {
+                "inputs": 
+                [
+                    
+                ],
+
+                "outputs": 
+                [
+                    {
+                        "channel": "0"
+                    }
+                ],
+
+                "code": "void mainImage( out vec4 fragColor, in vec2 fragCoord ) { vec2 uv = fragCoord.xy / iResolution.xy; fragColor = vec4(uv, 0, 1); }",
+                "name": "",
+                "description": "",
+                "type": "image"
+            }
+        ]
+    }
+}
