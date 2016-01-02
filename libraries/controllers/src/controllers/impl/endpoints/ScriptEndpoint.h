@@ -10,7 +10,7 @@
 #ifndef hifi_Controllers_ScriptEndpoint_h
 #define hifi_Controllers_ScriptEndpoint_h
 
-#include <QtScript/QScriptValue>
+#include <QtQml/QJSValue>
 
 #include "../Endpoint.h"
 
@@ -20,7 +20,7 @@ class ScriptEndpoint : public Endpoint {
     Q_OBJECT;
 public:
     using Endpoint::apply;
-    ScriptEndpoint(const QScriptValue& callable)
+    ScriptEndpoint(const QJSValue& callable)
         : Endpoint(Input::INVALID_INPUT), _callable(callable) {
     }
 
@@ -40,7 +40,7 @@ protected:
     Q_INVOKABLE void updatePose();
     Q_INVOKABLE virtual void internalApply(const Pose& newValue, int sourceID);
 private:
-    QScriptValue _callable;
+    QJSValue _callable;
     float _lastValueRead { 0.0f };
     float _lastValueWritten { 0.0f };
 

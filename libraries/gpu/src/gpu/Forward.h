@@ -9,6 +9,13 @@
 #ifndef hifi_gpu_Forward_h
 #define hifi_gpu_Forward_h
 
+#include <stdint.h>
+
+#include <memory>
+#include <vector>
+
+#include <glm/glm.hpp>
+
 namespace gpu {
     class Batch;
     class Backend;
@@ -25,7 +32,7 @@ namespace gpu {
     typedef int8_t int8;
 
     typedef uint8 Byte;
-    typedef uint32 Offset;
+    typedef size_t Offset;
     typedef std::vector<Offset> Offsets;
 
     typedef glm::mat4 Mat4;
@@ -55,7 +62,7 @@ namespace gpu {
     typedef std::vector<BufferPointer> Buffers;
     class BufferView;
     class Shader;
-    typedef Shader::Pointer ShaderPointer;
+    typedef std::shared_ptr<Shader> ShaderPointer;
     typedef std::vector<ShaderPointer> Shaders;
     class State;
     typedef std::shared_ptr<State> StatePointer;
@@ -72,6 +79,9 @@ namespace gpu {
     typedef std::vector<TexturePointer> Textures;
     class TextureView;
     typedef std::vector<TextureView> TextureViews;
+    class TextureSource;
+    typedef std::shared_ptr<TextureSource> TextureSourcePointer;
+
 }
 
 #endif

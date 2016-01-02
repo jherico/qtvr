@@ -9,6 +9,8 @@
 
 #include "OculusBaseDisplayPlugin.h"
 
+#include <QtCore/QSharedPointer>
+
 struct SwapFramebufferWrapper;
 using SwapFboPtr = QSharedPointer<SwapFramebufferWrapper>;
 

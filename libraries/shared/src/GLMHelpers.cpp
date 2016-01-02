@@ -10,7 +10,9 @@
 //
 
 #include "GLMHelpers.h"
+
 #include <glm/gtc/matrix_transform.hpp>
+
 #include "NumericalConstants.h"
 
 const vec3 Vectors::UNIT_X{ 1.0f, 0.0f, 0.0f };

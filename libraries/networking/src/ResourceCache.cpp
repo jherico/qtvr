@@ -9,19 +9,20 @@
 //  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
 //
 
+#include "ResourceCache.h"
+
 #include <cfloat>
 #include <cmath>
 
-#include <QThread>
-#include <QTimer>
-
-#include <SharedUtil.h>
 #include <assert.h>
 
-#include "NetworkAccessManager.h"
+#include <QtCore/QThread>
+#include <QtCore/QTimer>
+
+#include <SharedUtil.h>
+
 #include "NetworkLogging.h"
 
-#include "ResourceCache.h"
 
 #define clamp(x, min, max) (((x) < (min)) ? (min) :\
                            (((x) > (max)) ? (max) :\

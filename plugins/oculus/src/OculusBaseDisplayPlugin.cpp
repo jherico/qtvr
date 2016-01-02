@@ -7,6 +7,7 @@
 //
 #include "OculusBaseDisplayPlugin.h"
 
+#include <NumericalConstants.h>
 #include <ViewFrustum.h>
 
 #include "OculusHelpers.h"

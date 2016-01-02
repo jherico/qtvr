@@ -10,11 +10,3 @@
 
 static AbstractViewStateInterface* INSTANCE{nullptr};
 
-AbstractViewStateInterface* AbstractViewStateInterface::instance() {
-    return INSTANCE;
-}
-
-void AbstractViewStateInterface::setInstance(AbstractViewStateInterface* instance) {
-    INSTANCE = instance;
-}
-

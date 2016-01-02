@@ -8,9 +8,10 @@
 
 #include "CursorManager.h"
 
-#include <QCursor>
-#include <QWidget>
-#include <QUrl>
+#include <QtCore/QUrl>
+
+#include <QtGui/QCursor>
+#include <QtGui/QWindow>
 
 #include <PathUtils.h>
 
@@ -26,19 +27,19 @@ namespace Cursor {
 
 
     class MouseInstance : public Instance {
-        Source getType() const {
+        Source getType() const override {
             return Source::MOUSE;
         }
 
-        ivec2 getScreenPosition() const {
+        ivec2 getScreenPosition() const override {
             return toGlm(QCursor::pos());
         }
 
-        ivec2 getWindowPosition(QWidget* widget) const {
+        ivec2 getWindowPosition(QWindow* widget) const override {
             return toGlm(widget->mapFromGlobal(QCursor::pos()));
         }
 
-        vec2 getRelativePosition(QWidget* widget) const {
+        vec2 getRelativePosition(QWindow* widget) const override {
             vec2 pos = getWindowPosition(widget);
             pos /= vec2(toGlm(widget->size()));
             return pos;

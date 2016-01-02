@@ -13,13 +13,9 @@ if (FALSE)
     # we're using static GLEW, so define GLEW_STATIC
     add_definitions(-DGLEW_STATIC)
     set(TARGET_NAME openvr)
-    setup_hifi_plugin(OpenGL Script Qml Widgets)
-    link_hifi_libraries(shared gl networking controllers 
-        plugins display-plugins input-plugins script-engine 
-        render-utils model gpu render model-networking fbx)
+    setup_hifi_plugin(OpenGL Qml)
+    link_hifi_libraries(shared gl networking controllers plugins)
 
-    include_hifi_library_headers(octree)
-    
     add_dependency_external_projects(OpenVR)
     find_package(OpenVR REQUIRED)
     target_include_directories(${TARGET_NAME} PRIVATE ${OPENVR_INCLUDE_DIRS})

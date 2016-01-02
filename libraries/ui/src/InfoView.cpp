@@ -15,6 +15,7 @@
 #include <PathUtils.h>
 #include <QXmlQuery>
 #include <QDir>
+
 const QUrl InfoView::QML{ "InfoView.qml" };
 const QString InfoView::NAME{ "InfoView" };
 

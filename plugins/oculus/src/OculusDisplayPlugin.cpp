@@ -7,7 +7,7 @@
 //
 #include "OculusDisplayPlugin.h"
 
-#include <QtOpenGL/QGLWidget>
+#include <QtGui/QWindow>
 
 // FIXME get rid of this
 #include <gl/Config.h>

@@ -12,10 +12,7 @@
 #ifndef hifi_GeometryCache_h
 #define hifi_GeometryCache_h
 
-#include "model-networking/ModelCache.h"
-
 #include <array>
-
 
 #include <QMap>
 #include <QRunnable>
@@ -24,10 +21,6 @@
 
 #include <gpu/Batch.h>
 #include <gpu/Stream.h>
-
-
-#include <model/Material.h>
-#include <model/Asset.h>
 
 typedef glm::vec3 Vec3Key;
 
@@ -232,9 +225,6 @@ public:
     void updateVertices(int id, const QVector<glm::vec3>& points, const QVector<glm::vec2>& texCoords, const glm::vec4& color);
     void renderVertices(gpu::Batch& batch, gpu::Primitive primitiveType, int id);
 
-    /// Set a batch to the simple pipeline, returning the previous pipeline
-    void useSimpleDrawPipeline(gpu::Batch& batch, bool noBlend = false);
-
     struct ShapeData {
         size_t _indexOffset{ 0 };
         size_t _indexCount{ 0 };
@@ -333,8 +323,6 @@ private:
     QHash<int, gpu::BufferPointer> _registeredAlternateGridBuffers;
     QHash<int, Vec3Pair> _lastRegisteredAlternateGridBuffers;
     QHash<Vec3Pair, gpu::BufferPointer> _gridColors;
-
-    QHash<QUrl, QWeakPointer<NetworkGeometry> > _networkGeometry;
 };
 
 #endif // hifi_GeometryCache_h

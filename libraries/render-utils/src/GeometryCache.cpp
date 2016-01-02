@@ -13,39 +13,17 @@
 
 #include <cmath>
 
-#include <QNetworkReply>
-#include <QThreadPool>
+#include <QtNetwork/QNetworkReply>
+#include <QtCore/QThreadPool>
 
-#include <FSTReader.h>
 #include <NumericalConstants.h>
 
 #include "TextureCache.h"
 #include "RenderUtilsLogging.h"
 
-#include "standardTransformPNTC_vert.h"
-#include "standardDrawTexture_frag.h"
-
-#include "gpu/StandardShaderLib.h"
-
-#include "model/TextureMap.h"
-
-//#define WANT_DEBUG
-
 const int GeometryCache::UNKNOWN_ID = -1;
 
-
 static const int VERTICES_PER_TRIANGLE = 3;
-
-//static const uint FLOATS_PER_VERTEX = 3;
-//static const uint TRIANGLES_PER_QUAD = 2;
-//static const uint CUBE_FACES = 6;
-//static const uint CUBE_VERTICES_PER_FACE = 4;
-//static const uint CUBE_VERTICES = CUBE_FACES * CUBE_VERTICES_PER_FACE;
-//static const uint CUBE_VERTEX_POINTS = CUBE_VERTICES * FLOATS_PER_VERTEX;
-//static const uint CUBE_INDICES = CUBE_FACES * TRIANGLES_PER_QUAD * VERTICES_PER_TRIANGLE;
-//static const uint SPHERE_LATITUDES = 24;
-//static const uint SPHERE_MERIDIANS = SPHERE_LATITUDES * 2;
-//static const uint SPHERE_INDICES = SPHERE_MERIDIANS * (SPHERE_LATITUDES - 1) * TRIANGLES_PER_QUAD * VERTICES_PER_TRIANGLE;
 
 static const gpu::Element POSITION_ELEMENT{ gpu::VEC3, gpu::FLOAT, gpu::XYZ };
 static const gpu::Element NORMAL_ELEMENT{ gpu::VEC3, gpu::FLOAT, gpu::XYZ };
@@ -62,7 +40,6 @@ static const uint SHAPE_INDEX_SIZE = sizeof(gpu::uint16);
 
 void GeometryCache::ShapeData::setupVertices(gpu::BufferPointer& vertexBuffer, const VertexVector& vertices) {
     vertexBuffer->append(vertices);
-
     _positionView = gpu::BufferView(vertexBuffer, 0,
         vertexBuffer->getSize(), SHAPE_VERTEX_STRIDE, POSITION_ELEMENT);
     _normalView = gpu::BufferView(vertexBuffer, SHAPE_NORMALS_OFFSET,
@@ -1710,34 +1687,5 @@ void GeometryCache::renderLine(gpu::Batch& batch, const glm::vec2& p1, const glm
     batch.setInputFormat(details.streamFormat);
     batch.setInputStream(0, *details.stream);
     batch.draw(gpu::LINES, 2, 0);
-}
-
-void GeometryCache::useSimpleDrawPipeline(gpu::Batch& batch, bool noBlend) {
-    if (!_standardDrawPipeline) {
-        auto vs = gpu::Shader::createVertex(std::string(standardTransformPNTC_vert));
-        auto ps = gpu::Shader::createPixel(std::string(standardDrawTexture_frag));
-        auto program = gpu::Shader::createProgram(vs, ps);
-        gpu::Shader::makeProgram((*program));
-
-        auto state = std::make_shared<gpu::State>();
-
-
-        // enable decal blend
-        state->setBlendFunction(true, gpu::State::SRC_ALPHA, gpu::State::BLEND_OP_ADD, gpu::State::INV_SRC_ALPHA);
-
-        _standardDrawPipeline = gpu::Pipeline::create(program, state);
-
-
-        auto stateNoBlend = std::make_shared<gpu::State>();
-        auto noBlendPS = gpu::StandardShaderLib::getDrawTextureOpaquePS();
-        auto programNoBlend = gpu::Shader::createProgram(vs, noBlendPS);
-        gpu::Shader::makeProgram((*programNoBlend));
-        _standardDrawPipelineNoBlend = gpu::Pipeline::create(programNoBlend, stateNoBlend);
-    }
-    if (noBlend) {
-        batch.setPipeline(_standardDrawPipelineNoBlend);
-    } else {
-        batch.setPipeline(_standardDrawPipeline);
-    }
 }
 

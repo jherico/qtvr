@@ -7,9 +7,9 @@
 //
 #pragma once
 
-#include <display-plugins/WindowOpenGLDisplayPlugin.h>
+#include <plugins/impl/display/WindowOpenGLDisplayPlugin.h>
 
-#include <QTimer>
+#include <QtCore/QTimer>
 
 #include <OVR_CAPI_GL.h>
 

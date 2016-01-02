@@ -50,9 +50,6 @@ signals:
     void descriptionChanged();
     void imageURLChanged();
 
-private slots:
-    void handleAPIResponse(QNetworkReply& requestReply);
-
 private:
     void requestHyperlinkImage();
 

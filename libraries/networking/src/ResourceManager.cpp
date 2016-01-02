@@ -11,7 +11,6 @@
 
 #include "ResourceManager.h"
 
-#include "AssetResourceRequest.h"
 #include "FileResourceRequest.h"
 #include "HTTPResourceRequest.h"
 
@@ -63,8 +62,6 @@ ResourceRequest* ResourceManager::createResourceRequest(QObject* parent, const Q
         return new FileResourceRequest(parent, normalizedURL);
     } else if (scheme == URL_SCHEME_HTTP || scheme == URL_SCHEME_HTTPS || scheme == URL_SCHEME_FTP) {
         return new HTTPResourceRequest(parent, normalizedURL);
-    } else if (scheme == URL_SCHEME_ATP) {
-        return new AssetResourceRequest(parent, normalizedURL);
     }
 
     qDebug() << "Unknown scheme (" << scheme << ") for URL: " << url.url();

@@ -12,13 +12,11 @@
 #ifndef hifi_OffscreenUi_h
 #define hifi_OffscreenUi_h
 
-#include <gl/OffscreenQmlSurface.h>
-
 #include <QMessageBox>
 #include <DependencyManager.h>
 
+#include "OffscreenQmlSurface.h"
 #include "OffscreenQmlElement.h"
-
 
 class OffscreenUi : public OffscreenQmlSurface, public Dependency {
     Q_OBJECT

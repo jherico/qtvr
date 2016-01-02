@@ -9,8 +9,6 @@
 
 #include <memory>
 
-#include <QtWidgets/QMainWindow>
-#include <QtOpenGL/QGLWidget>
 #include <GLMHelpers.h>
 #include <QEvent>
 #include <QtGui/QResizeEvent>

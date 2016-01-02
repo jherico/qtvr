@@ -13,7 +13,7 @@
 #include <mutex>
 #include <QtGui/QWindow>
 
-class QOpenGLContext;
+class QOpenGLContextWrapper;
 class QOpenGLDebugLogger;
 
 class GLWindow : public QWindow {
@@ -24,10 +24,10 @@ public:
     bool makeCurrent();
     void doneCurrent();
     void swapBuffers();
-    QOpenGLContext* context() const;
+    QOpenGLContextWrapper* context() const;
 private:
     std::once_flag _reportOnce;
-    QOpenGLContext* _context{ nullptr };
+    QOpenGLContextWrapper* _context{ nullptr };
 };
 
 #endif

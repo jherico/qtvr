@@ -11,6 +11,8 @@
 
 #include <GLMHelpers.h>
 
+class QWindow;
+
 namespace Cursor {
     enum class Source {
         MOUSE,
@@ -33,8 +35,8 @@ namespace Cursor {
     class Instance {
     public:
         virtual Source getType() const = 0;
-        virtual ivec2 getWindowPosition(QWidget* widget) const = 0;
-        virtual vec2 getRelativePosition(QWidget* widget) const = 0;
+        virtual ivec2 getWindowPosition(QWindow* widget) const = 0;
+        virtual vec2 getRelativePosition(QWindow* widget) const = 0;
         virtual ivec2 getScreenPosition() const = 0;
         virtual void setIcon(uint16_t icon);
         virtual uint16_t getIcon() const;

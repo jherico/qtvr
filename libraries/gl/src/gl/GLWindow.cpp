@@ -12,6 +12,7 @@
 #include <QtGui/QOpenGLDebugLogger>
 
 #include "GLHelpers.h"
+#include "QOpenGLContextWrapper.h"
 
 void GLWindow::createContext(QOpenGLContext* shareContext) {
     createContext(getDefaultOpenGLSurfaceFormat(), shareContext);
@@ -20,7 +21,7 @@ void GLWindow::createContext(QOpenGLContext* shareContext) {
 void GLWindow::createContext(const QSurfaceFormat& format, QOpenGLContext* shareContext) {
     setSurfaceType(QSurface::OpenGLSurface);
     setFormat(format);
-    _context = new QOpenGLContext;
+    _context = new QOpenGLContextWrapper();
     _context->setFormat(format);
     if (shareContext) {
         _context->setShareContext(shareContext);
@@ -47,7 +48,7 @@ bool GLWindow::makeCurrent() {
         qDebug() << "GL Renderer: " << QString((const char*) glGetString(GL_RENDERER));
     });
     
-    Q_ASSERT(_context == QOpenGLContext::currentContext());
+    Q_ASSERT(_context->isCurrentContext());
     
     return makeCurrentResult;
 }
@@ -60,7 +61,7 @@ void GLWindow::swapBuffers() {
     _context->swapBuffers(this);
 }
 
-QOpenGLContext* GLWindow::context() const {
+QOpenGLContextWrapper* GLWindow::context() const {
     return _context;
 }
 

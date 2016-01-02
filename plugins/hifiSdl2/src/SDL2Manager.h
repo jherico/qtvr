@@ -17,7 +17,7 @@
 #endif
 
 #include <controllers/UserInputMapper.h>
-#include <input-plugins/InputPlugin.h>
+#include <plugins/InputPlugin.h>
 #include "Joystick.h"
 
 class SDL2Manager : public InputPlugin {

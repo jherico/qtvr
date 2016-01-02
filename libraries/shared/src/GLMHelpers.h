@@ -15,8 +15,11 @@
 #include <stdint.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/random.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/vector_angle.hpp>
+
 
 // Bring the most commonly used GLM types into the default namespace
 using glm::ivec2;

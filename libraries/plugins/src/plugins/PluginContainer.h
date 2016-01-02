@@ -15,10 +15,8 @@
 
 #include "Forward.h"
 
-class QAction;
-class GLWidget;
 class QScreen;
-class QOpenGLContext;
+class QOpenGLContextWrapper;
 class QWindow;
 
 class DisplayPlugin;
@@ -30,9 +28,11 @@ public:
     virtual ~PluginContainer();
     virtual void addMenu(const QString& menuName) = 0;
     virtual void removeMenu(const QString& menuName) = 0;
-    virtual QAction* addMenuItem(PluginType pluginType, const QString& path, const QString& name, std::function<void(bool)> onClicked, bool checkable = false, bool checked = false, const QString& groupName = "") = 0;
+    virtual void addMenuItem(PluginType pluginType, const QString& path, const QString& name, std::function<void(bool)> onClicked, bool checkable = false, bool checked = false, const QString& groupName = "") = 0;
     virtual void removeMenuItem(const QString& menuName, const QString& menuItem) = 0;
     virtual bool isOptionChecked(const QString& name) = 0;
+    virtual void clearDisplayPluginItems() = 0;
+    virtual void clearInputPluginItems() = 0;
     virtual void setIsOptionChecked(const QString& path, bool checked) = 0;
     virtual void setFullscreen(const QScreen* targetScreen, bool hideMenu = false) = 0;
     virtual void unsetFullscreen(const QScreen* avoidScreen = nullptr) = 0;
@@ -41,9 +41,8 @@ public:
     virtual bool makeRenderingContextCurrent() = 0;
     virtual void releaseSceneTexture(uint32_t texture) = 0;
     virtual void releaseOverlayTexture(uint32_t texture) = 0;
-    virtual GLWidget* getPrimaryWidget() = 0;
     virtual QWindow* getPrimaryWindow() = 0;
-    virtual QOpenGLContext* getPrimaryContext() = 0;
+    virtual QOpenGLContextWrapper* getPrimaryContext() = 0;
     virtual bool isForeground() = 0;
     virtual const DisplayPlugin* getActiveDisplayPlugin() const = 0;
 

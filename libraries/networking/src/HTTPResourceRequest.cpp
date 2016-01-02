@@ -17,7 +17,6 @@
 
 #include <SharedUtil.h>
 
-#include "NetworkAccessManager.h"
 #include "NetworkLogging.h"
 
 HTTPResourceRequest::~HTTPResourceRequest() {
@@ -38,7 +37,8 @@ void HTTPResourceRequest::doSend() {
         networkRequest.setAttribute(QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork);
     }
 
-    _reply = NetworkAccessManager::getInstance().get(networkRequest);
+    static QNetworkAccessManager instance;
+    _reply = instance.get(networkRequest);
     
     connect(_reply, &QNetworkReply::finished, this, &HTTPResourceRequest::onRequestFinished);
     connect(_reply, &QNetworkReply::downloadProgress, this, &HTTPResourceRequest::onDownloadProgress);

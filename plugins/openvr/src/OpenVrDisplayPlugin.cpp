@@ -9,9 +9,7 @@
 
 #include <memory>
 
-#include <QMainWindow>
 #include <QLoggingCategory>
-#include <QGLWidget>
 #include <QEvent>
 #include <QResizeEvent>
 

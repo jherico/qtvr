@@ -35,7 +35,7 @@ void RouteBuilderProxy::toQml(const QJSValue& destination) {
     return to(destinationEndpoint);
 }
 
-void RouteBuilderProxy::to(const QScriptValue& destination) {
+void RouteBuilderProxy::to(const QJSValue& destination) {
     qCDebug(controllers) << "Completing route " << destination.toString();
     auto destinationEndpoint = _parent.endpointFor(destination);
     return to(destinationEndpoint);
@@ -57,7 +57,7 @@ QObject* RouteBuilderProxy::peek(bool enable) {
     return this;
 }
 
-QObject* RouteBuilderProxy::when(const QScriptValue& expression) {
+QObject* RouteBuilderProxy::when(const QJSValue& expression) {
     _route->conditional = _parent.conditionalFor(expression);
     return this;
 }

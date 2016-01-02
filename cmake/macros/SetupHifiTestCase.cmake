@@ -9,7 +9,7 @@
 
 # Sets up a hifi testcase using QtTest.
 # Can be called with arguments; like setup_hifi_project, the arguments correspond to qt modules, so call it
-# via setup_hifi_testcase(Script Network Qml) to build the testcase with Qt5Script, Qt5Network, and Qt5Qml linked,
+# via setup_hifi_testcase(Network Qml) to build the testcase with Qt5Script, Qt5Network, and Qt5Qml linked,
 # for example.
 
 # One special quirk of this is that because we are creating multiple testcase targets (instead of just one),
