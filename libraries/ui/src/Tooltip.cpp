@@ -61,7 +61,7 @@ QString Tooltip::showTip(const QString& title, const QString& description) {
 }
 
 void Tooltip::closeTip(const QString& tipId) {
-    auto rootItem = DependencyManager::get<OffscreenUi>()->getRootItem();
+    auto rootItem = qApp->getOffscreenUi()->getRootItem();
     QQuickItem* that = rootItem->findChild<QQuickItem*>(tipId);
     if (that) {
         that->deleteLater();

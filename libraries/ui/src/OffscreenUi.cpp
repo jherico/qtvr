@@ -25,7 +25,7 @@ public:
     OffscreenUiRoot(QQuickItem* parent = 0);
     Q_INVOKABLE void information(const QString& title, const QString& text);
     Q_INVOKABLE void loadChild(const QUrl& url) {
-        DependencyManager::get<OffscreenUi>()->load(url);
+        qApp->getOffscreenUi()->load(url);
     }
 };
 

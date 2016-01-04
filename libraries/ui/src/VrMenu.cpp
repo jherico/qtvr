@@ -49,7 +49,7 @@ private:
 const int MenuUserData::USER_DATA_ID = QObject::registerUserData();
 
 HIFI_QML_DEF_LAMBDA(VrMenu, [&](QQmlContext* context, QObject* newItem) {
-    auto offscreenUi = DependencyManager::get<OffscreenUi>();
+    auto offscreenUi = qApp->getOffscreenUi();
     QObject* rootMenu = offscreenUi->getRootItem()->findChild<QObject*>("rootMenu");
     Q_ASSERT(rootMenu);
     static_cast<VrMenu*>(newItem)->setRootMenu(rootMenu);

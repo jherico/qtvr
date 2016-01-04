@@ -12,7 +12,9 @@
 #ifndef hifi_OffscreenQmlElement_h
 #define hifi_OffscreenQmlElement_h
 
-#include <QQuickItem>
+#include <QtQuick/QQuickItem>
+#include "UiApplication.h"
+
 class QQmlContext;
 
 #define HIFI_QML_DECL \
@@ -46,16 +48,16 @@ private:
     } \
     \
     void x::show(std::function<void(QQmlContext*, QObject*)> f) { \
-        auto offscreenUi = DependencyManager::get<OffscreenUi>(); \
+        auto offscreenUi = qApp->getOffscreenUi(); \
         offscreenUi->show(QML, NAME, f); \
     } \
     \
     void x::toggle(std::function<void(QQmlContext*, QObject*)> f) { \
-        auto offscreenUi = DependencyManager::get<OffscreenUi>(); \
+        auto offscreenUi = qApp->getOffscreenUi(); \
         offscreenUi->toggle(QML, NAME, f); \
     } \
     void x::load(std::function<void(QQmlContext*, QObject*)> f) { \
-        auto offscreenUi = DependencyManager::get<OffscreenUi>(); \
+        auto offscreenUi = qApp->getOffscreenUi(); \
         offscreenUi->load(QML, f); \
     }
 
@@ -67,15 +69,15 @@ private:
         qmlRegisterType<x>("Hifi", 1, 0, NAME.toLocal8Bit().constData()); \
     } \
     void x::show() { \
-        auto offscreenUi = DependencyManager::get<OffscreenUi>(); \
+        auto offscreenUi = qApp->getOffscreenUi(); \
         offscreenUi->show(QML, NAME, f); \
     } \
     void x::toggle() { \
-        auto offscreenUi = DependencyManager::get<OffscreenUi>(); \
+        auto offscreenUi = qApp->getOffscreenUi(); \
         offscreenUi->toggle(QML, NAME, f); \
     } \
     void x::load() { \
-        auto offscreenUi = DependencyManager::get<OffscreenUi>(); \
+        auto offscreenUi = qApp->getOffscreenUi(); \
         offscreenUi->load(QML, f); \
     }
 

@@ -35,7 +35,7 @@ int main(int argc, const char* argv[]) {
     int exitCode;
     {
         QSettings::setDefaultFormat(QSettings::IniFormat);
-        Application app(argc, const_cast<char**>(argv), startupTime);
+        Application app(argc, const_cast<char**>(argv));
 
         QTranslator translator;
         translator.load("i18n/interface_en");

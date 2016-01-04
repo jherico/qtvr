@@ -10,7 +10,7 @@
 #include "NullDisplayPlugin.h"
 
 #include <QtGui/QImage>
-#include "../../PluginContainer.h"
+#include "../../PluginApplication.h"
 
 const QString NullDisplayPlugin::NAME("NullDisplayPlugin");
 
@@ -27,11 +27,11 @@ bool NullDisplayPlugin::hasFocus() const {
 }
 
 void NullDisplayPlugin::submitSceneTexture(uint32_t frameIndex, uint32_t sceneTexture, const glm::uvec2& sceneSize) {
-    _container->releaseSceneTexture(sceneTexture);
+    qApp->releaseSceneTexture(sceneTexture);
 }
 
 void NullDisplayPlugin::submitOverlayTexture(uint32_t overlayTexture, const glm::uvec2& overlaySize) {
-    _container->releaseOverlayTexture(overlayTexture);
+    qApp->releaseOverlayTexture(overlayTexture);
 }
 
 void NullDisplayPlugin::stop() {}

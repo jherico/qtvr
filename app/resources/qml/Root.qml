@@ -7,7 +7,21 @@ import QtQuick.Controls 1.4
 Root {
     id: root
     anchors.fill: parent
-
+    
+    RootMenu {}
+    
+    Row {
+        spacing: 8
+        Text { 
+            text: "File"
+            font.pointSize: 24
+        }
+        Text { 
+            text: "Edit" 
+            font.pointSize: 24
+        }
+    }
+    
     Rectangle {
         anchors.fill: parent
         color: "#7fff0000"
@@ -16,6 +30,7 @@ Root {
     Rectangle {
         width: 50
         height: 50
+        y: 20
         color: "red"
         ColorAnimation on color {
             id: animation
@@ -26,7 +41,10 @@ Root {
         }
         MouseArea {
             anchors.fill: parent
-            onClicked: animation.from = "blue"
+            onClicked: {
+                animation.from = "blue"
+                console.log("Click")
+            }
         }
     }
 
@@ -48,4 +66,3 @@ Root {
         forceActiveFocus();
     }
 }
-

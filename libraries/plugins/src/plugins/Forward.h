@@ -18,7 +18,6 @@ enum class PluginType {
 class DisplayPlugin;
 class InputPlugin;
 class Plugin;
-class PluginContainer;
 class PluginManager;
 
 using DisplayPluginPointer = std::shared_ptr<DisplayPlugin>;

@@ -15,10 +15,10 @@
 // 8 bits of stencil buffer (typically you really only need 1 bit for functionality
 // but GL implementations usually just come with buffer sizes in multiples of 8)
 #define DEFAULT_GL_STENCIL_BUFFER_BITS 8
+#define DEFAULT_GL_MAJOR_VERSION 4
+#define DEFAULT_GL_MINOR_VERSION 3
 
 class QSurfaceFormat;
-class QGLFormat;
-
 const QSurfaceFormat& getDefaultOpenGLSurfaceFormat();
-const QGLFormat& getDefaultGLFormat();
+
 #endif

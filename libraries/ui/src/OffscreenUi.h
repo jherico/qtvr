@@ -18,7 +18,7 @@
 #include "OffscreenQmlSurface.h"
 #include "OffscreenQmlElement.h"
 
-class OffscreenUi : public OffscreenQmlSurface, public Dependency {
+class OffscreenUi : public OffscreenQmlSurface {
     Q_OBJECT
 
 public:

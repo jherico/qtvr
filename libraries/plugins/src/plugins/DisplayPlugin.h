@@ -14,12 +14,12 @@
 
 #include <QtCore/QSize>
 #include <QtCore/QPoint>
-class QImage;
 
 #include <GLMHelpers.h>
-#include <RegisteredMetaTypes.h>
 
 #include "Plugin.h"
+
+class QImage;
 
 enum Eye {
     Left,

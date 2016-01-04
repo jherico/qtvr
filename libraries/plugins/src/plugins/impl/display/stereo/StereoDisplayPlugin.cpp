@@ -13,7 +13,7 @@
 
 //#include <gpu/GLBackend.h>
 
-#include "../../../PluginContainer.h"
+#include "../../../PluginApplication.h"
 
 StereoDisplayPlugin::StereoDisplayPlugin() {
 }
@@ -68,13 +68,13 @@ void StereoDisplayPlugin::activate() {
         if (screen == qApp->primaryScreen()) {
             checked = true;
         }
-        _container->addMenuItem(PluginType::DISPLAY_PLUGIN, MENU_PATH(), name,
-            [this](bool clicked) { updateScreen(); }, true, checked, "Screens");
+        //qApp->addMenuItem(PluginType::DISPLAY_PLUGIN, MENU_PATH(), name,
+        //    [this](bool clicked) { updateScreen(); }, true, checked, "Screens");
     }
 
-    _container->removeMenu(FRAMERATE);
+    //_container->removeMenu(FRAMERATE);
 
-    _container->setFullscreen(qApp->primaryScreen());
+    qApp->setFullscreen(qApp->primaryScreen());
     WindowOpenGLDisplayPlugin::activate();
 }
 
@@ -82,7 +82,7 @@ void StereoDisplayPlugin::updateScreen() {
 }
 
 void StereoDisplayPlugin::deactivate() {
-    _container->unsetFullscreen();
+    qApp->unsetFullscreen();
     WindowOpenGLDisplayPlugin::deactivate();
 }
 

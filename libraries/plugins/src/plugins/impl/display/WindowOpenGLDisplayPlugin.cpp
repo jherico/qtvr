@@ -9,9 +9,10 @@
 
 #include <QtGui/QWindow>
 
-#include "../../PluginContainer.h"
+#include <gl/GLWindow.h>
+#include "../../PluginApplication.h"
 
-glm::uvec2 WindowOpenGLDisplayPlugin::getSurfacePixels() const {
+uvec2 WindowOpenGLDisplayPlugin::getSurfacePixels() const {
     uvec2 result;
     if (_window) {
         result = toGlm(_window->geometry().size() * _window->devicePixelRatio());
@@ -19,7 +20,7 @@ glm::uvec2 WindowOpenGLDisplayPlugin::getSurfacePixels() const {
     return result;
 }
 
-glm::uvec2 WindowOpenGLDisplayPlugin::getSurfaceSize() const {
+uvec2 WindowOpenGLDisplayPlugin::getSurfaceSize() const {
     uvec2 result;
     if (_window) {
         result = toGlm(_window->geometry().size());
@@ -28,11 +29,11 @@ glm::uvec2 WindowOpenGLDisplayPlugin::getSurfaceSize() const {
 }
 
 bool WindowOpenGLDisplayPlugin::hasFocus() const {
-    return true;
+    return qApp->getWindow()->isActive();
 }
 
 void WindowOpenGLDisplayPlugin::activate() {
-    _window = _container->getPrimaryWindow();
+    _window = qApp->getWindow();
     OpenGLDisplayPlugin::activate();
 }
 

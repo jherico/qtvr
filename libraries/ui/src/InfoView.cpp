@@ -63,7 +63,7 @@ void InfoView::show(const QString& path, bool firstOrChangedOnly) {
         }
         infoVersion.set(version);
     }
-    auto offscreenUi = DependencyManager::get<OffscreenUi>();
+    auto offscreenUi = qApp->getOffscreenUi();
     QString infoViewName(NAME + "_" + path);
     offscreenUi->show(QML, NAME + "_" + path, [=](QQmlContext* context, QObject* newObject){
         QQuickItem* item = dynamic_cast<QQuickItem*>(newObject);

@@ -28,8 +28,6 @@
 #include <DependencyManager.h>
 #include <NumericalConstants.h>
 
-
-
 // Time between receiving a request to render the offscreen UI actually triggering
 // the render.  Could possibly be increased depending on the framerate we expect to
 // achieve.
@@ -53,10 +51,6 @@ private:
     friend class OffscreenQmlRenderer;
     friend class OffscreenQmlSurface;
 };
-
-
-Q_DECLARE_LOGGING_CATEGORY(offscreenFocus)
-Q_LOGGING_CATEGORY(offscreenFocus, "hifi.offscreen.focus")
 
 static const QEvent::Type INIT = QEvent::Type(QEvent::User + 1);
 static const QEvent::Type RENDER = QEvent::Type(QEvent::User + 2);

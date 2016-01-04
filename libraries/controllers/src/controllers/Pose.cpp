@@ -9,8 +9,6 @@
 
 #include <QtQml/QJSValue>
 
-#include <RegisteredMetaTypes.h>
-
 #include "Pose.h"
 
 namespace controller {

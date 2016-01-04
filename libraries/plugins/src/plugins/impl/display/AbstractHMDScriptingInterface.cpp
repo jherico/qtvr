@@ -9,9 +9,8 @@
 #include "AbstractHMDScriptingInterface.h"
 
 #include <SettingHandle.h>
-
 #include "../../DisplayPlugin.h"
-#include "../../PluginContainer.h"
+#include "../../PluginApplication.h"
 
 static Setting::Handle<float> IPD_SCALE_HANDLE("hmd.ipdScale", 1.0f);
 
@@ -20,7 +19,7 @@ AbstractHMDScriptingInterface::AbstractHMDScriptingInterface() {
 }
 
 float AbstractHMDScriptingInterface::getIPD() const {
-    return PluginContainer::getInstance().getActiveDisplayPlugin()->getIPD();
+    return qApp->getActiveDisplayPlugin()->getIPD();
 }
 
 float AbstractHMDScriptingInterface::getEyeHeight() const {
@@ -47,5 +46,5 @@ void AbstractHMDScriptingInterface::setIPDScale(float IPDScale) {
 }
 
 bool AbstractHMDScriptingInterface::isHMDMode() const {
-    return PluginContainer::getInstance().getActiveDisplayPlugin()->isHmd();
+    return qApp->getActiveDisplayPlugin()->isHmd();
 }

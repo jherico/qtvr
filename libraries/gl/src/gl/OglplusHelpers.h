@@ -13,10 +13,9 @@
 #include <queue>
 #include <map>
 
-
 #include <QtGlobal>
 
-#include "GLMHelpers.h"
+#include <GLMHelpers.h>
 
 #define OGLPLUS_USE_GLCOREARB_H 0
 #define OGLPLUS_USE_GLEW 1

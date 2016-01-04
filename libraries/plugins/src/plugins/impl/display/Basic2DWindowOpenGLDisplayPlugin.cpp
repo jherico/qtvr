@@ -12,7 +12,7 @@
 #include <QtGui/QWindow>
 #include <QtGui/QGuiApplication>
 
-#include "../../PluginContainer.h"
+#include "../../PluginApplication.h"
 
 const QString Basic2DWindowOpenGLDisplayPlugin::NAME("2D Display");
 
@@ -32,30 +32,30 @@ const QString& Basic2DWindowOpenGLDisplayPlugin::getName() const {
 void Basic2DWindowOpenGLDisplayPlugin::activate() {
     WindowOpenGLDisplayPlugin::activate();
 
-    _container->addMenuItem(PluginType::DISPLAY_PLUGIN, MENU_PATH(), FULLSCREEN,
-        [this](bool clicked) {
-            if (clicked) {
-                _container->setFullscreen(getFullscreenTarget());
-            } else {
-                _container->unsetFullscreen();
-            }
-        }, true, false);
-    _container->addMenu(FRAMERATE);
-    _container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_UNLIMITED,
-        [this](bool) { updateFramerate(); }, true, true, FRAMERATE);
-    _container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_60,
-        [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
-    _container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_50,
-        [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
-    _container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_40,
-        [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
-    _container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_30,
-        [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
+    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, MENU_PATH(), FULLSCREEN,
+    //    [this](bool clicked) {
+    //        if (clicked) {
+    //            _container->setFullscreen(getFullscreenTarget());
+    //        } else {
+    //            _container->unsetFullscreen();
+    //        }
+    //    }, true, false);
+    //_container->addMenu(FRAMERATE);
+    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_UNLIMITED,
+    //    [this](bool) { updateFramerate(); }, true, true, FRAMERATE);
+    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_60,
+    //    [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
+    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_50,
+    //    [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
+    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_40,
+    //    [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
+    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_30,
+    //    [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
 
-    // Vsync detection happens in the parent class activate, so we need to check after that
-    if (_vsyncSupported) {
-        _container->addMenuItem(PluginType::DISPLAY_PLUGIN, MENU_PATH(), VSYNC_ON, [this](bool) {}, true, true);
-    } 
+    //// Vsync detection happens in the parent class activate, so we need to check after that
+    //if (_vsyncSupported) {
+    //    _container->addMenuItem(PluginType::DISPLAY_PLUGIN, MENU_PATH(), VSYNC_ON, [this](bool) {}, true, true);
+    //} 
 
     updateFramerate();
 }
@@ -92,12 +92,13 @@ int Basic2DWindowOpenGLDisplayPlugin::getDesiredInterval() const {
 bool Basic2DWindowOpenGLDisplayPlugin::isThrottled() const {
     static const QString ThrottleFPSIfNotFocus = "Throttle FPS If Not Focus"; // FIXME - this value duplicated in Menu.h
 
-    bool shouldThrottle = (!_container->isForeground() && _container->isOptionChecked(ThrottleFPSIfNotFocus));
-    
-    if (_isThrottled != shouldThrottle) {
-        _isThrottled = shouldThrottle;
-        _timer.start(getDesiredInterval());
-    }
+    bool shouldThrottle = false;
+    //bool shouldThrottle = (!qApp->isActive() && _container->isOptionChecked(ThrottleFPSIfNotFocus));
+    //
+    //if (_isThrottled != shouldThrottle) {
+    //    _isThrottled = shouldThrottle;
+    //    _timer.start(getDesiredInterval());
+    //}
     
     return shouldThrottle;
 }

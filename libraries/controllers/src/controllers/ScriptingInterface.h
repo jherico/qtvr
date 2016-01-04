@@ -21,10 +21,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include <QCursor>
-#include <QThread>
+#include <QtCore/QUuid>
+#include <QtCore/QThread>
 #include <QtCore/QObject>
 #include <QtCore/QVariant>
+
+#include <QtGui/QCursor>
 
 #include <QtQml/QJSValue>
 #include <QtQml/QJSValue>

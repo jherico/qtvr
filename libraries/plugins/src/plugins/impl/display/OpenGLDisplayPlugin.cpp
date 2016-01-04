@@ -23,8 +23,9 @@
 #include <gl/QOpenGLContextWrapper.h>
 #include <gl/Config.h>
 #include <gl/GLEscrow.h>
+#include <gl/GLWindow.h>
 
-#include "../../PluginContainer.h"
+#include "../../PluginApplication.h"
 
 class PresentThread : public QThread, public Dependency {
     using Mutex = std::mutex;
@@ -48,25 +49,19 @@ public:
         _newPlugin = plugin;
     }
 
-    void setContext(QOpenGLContextWrapper * context) {
-        _context = context;
-        _context->moveToThread(this);
+    void setWindow(GLWindow* window) {
+        _window = window;
+        _window->context()->moveToThread(this);
     }
-
-    void setSurface(QSurface* surface) {
-        _surface = surface;
-    }
-    
 
     virtual void run() override {
         OpenGLDisplayPlugin* currentPlugin{ nullptr };
-        Q_ASSERT(_context);
         while (!_shutdown) {
             if (_pendingMainThreadOperation) {
                 {
                     Lock lock(_mutex);
                     // Move the context to the main thread
-                    _context->moveToThread(qApp->thread());
+                    _window->context()->moveToThread(qApp->thread());
                     _pendingMainThreadOperation = false;
                     // Release the main thread to do it's action
                     _condition.notify_one();
@@ -83,7 +78,7 @@ public:
             // Check before lock
             if (_newPlugin != nullptr) {
                 Lock lock(_mutex);
-                _context->makeCurrent(_surface);
+                _window->makeCurrent();
                 // Check if we have a new plugin to activate
                 if (_newPlugin != nullptr) {
                     // Deactivate the old plugin
@@ -96,7 +91,7 @@ public:
                     currentPlugin = _newPlugin;
                     _newPlugin = nullptr;
                 }
-                _context->doneCurrent();
+                _window->doneCurrent();
                 lock.unlock();
             }
 
@@ -107,22 +102,21 @@ public:
             }
 
             // take the latest texture and present it
-            _context->makeCurrent(_surface);
-            if (_context->isCurrentContext()) {
+            if (_window->makeCurrent()) {
                 currentPlugin->present();
-                _context->doneCurrent();
+                _window->doneCurrent();
             } else {
                 qWarning() << "Makecurrent failed";
             }
         }
 
-        _context->makeCurrent(_surface);
+        _window->makeCurrent();
         if (currentPlugin) {
             currentPlugin->uncustomizeContext();
             currentPlugin->enableDeactivate();
         }
-        _context->doneCurrent();
-        _context->moveToThread(qApp->thread());
+        _window->doneCurrent();
+        _window->context()->moveToThread(qApp->thread());
     }
 
     void withMainThreadContext(std::function<void()> f) {
@@ -132,12 +126,12 @@ public:
         _finishedMainThreadOperation = false;
         _condition.wait(lock, [&] { return !_pendingMainThreadOperation; });
 
-        _context->makeCurrent(_surface);
+        _window->makeCurrent();
         f();
-        _context->doneCurrent();
+        _window->doneCurrent();
 
         // Move the context back to the presentation thread
-        _context->moveToThread(this);
+        _window->context()->moveToThread(this);
 
         // restore control of the context to the presentation thread and signal 
         // the end of the operation
@@ -159,18 +153,17 @@ private:
     bool _finishedMainThreadOperation { false };
     QThread* _mainThread { nullptr };
     OpenGLDisplayPlugin* _newPlugin { nullptr };
-    QOpenGLContextWrapper* _context { nullptr };
-    QSurface* _surface { nullptr };
+    GLWindow* _window { nullptr };
 };
 
 OpenGLDisplayPlugin::OpenGLDisplayPlugin() {
     _sceneTextureEscrow.setRecycler([this](GLuint texture){
         cleanupForSceneTexture(texture);
-        _container->releaseSceneTexture(texture);
+        qApp->releaseSceneTexture(texture);
     });
 
     _overlayTextureEscrow.setRecycler([this](GLuint texture) {
-        _container->releaseOverlayTexture(texture);
+        qApp->releaseOverlayTexture(texture);
     });
 
     connect(&_timer, &QTimer::timeout, this, [&] {
@@ -201,14 +194,13 @@ void OpenGLDisplayPlugin::activate() {
     // Start the present thread if necessary
     auto presentThread = DependencyManager::get<PresentThread>();
     if (!presentThread) {
-        auto window = _container->getPrimaryWindow();
+        auto window = qApp->getWindow();
 
 
         DependencyManager::set<PresentThread>();
         presentThread = DependencyManager::get<PresentThread>();
         presentThread->setObjectName("Presentation Thread");
-        presentThread->setContext(_container->getPrimaryContext());
-        presentThread->setSurface(_container->getPrimaryWindow());
+        presentThread->setWindow(window);
         // Start execution
         presentThread->start();
     }
@@ -388,21 +380,20 @@ bool OpenGLDisplayPlugin::isVsyncEnabled() {
 }
 
 void OpenGLDisplayPlugin::swapBuffers() {
-    static auto window = _container->getPrimaryWindow();
-    static auto context = _container->getPrimaryContext();
-    context->swapBuffers(window);
+    static auto window = qApp->getWindow();
+    window->swapBuffers();
 }
 
 void OpenGLDisplayPlugin::withMainThreadContext(std::function<void()> f) const {
     static auto presentThread = DependencyManager::get<PresentThread>();
     presentThread->withMainThreadContext(f);
-    _container->makeRenderingContextCurrent();
+    qApp->makeRenderingContextCurrent();
 }
 
 QImage OpenGLDisplayPlugin::getScreenshot() const {
     QImage result;
     withMainThreadContext([&] {
-        static auto widget = _container->getPrimaryWindow();
+//        static auto widget = qApp->getWindow();
 //        result = widget->grabFrameBuffer();
     });
     return result;

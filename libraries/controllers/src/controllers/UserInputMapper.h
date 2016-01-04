@@ -18,10 +18,8 @@
 #include <mutex>
 
 #include <QtQml/QJSValue>
-#include <QtQml/QJSValue>
 
 #include <DependencyManager.h>
-#include <RegisteredMetaTypes.h>
 
 #include "Forward.h"
 #include "Pose.h"

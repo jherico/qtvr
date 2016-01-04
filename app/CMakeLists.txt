@@ -73,7 +73,7 @@ if (WIN32)
 endif()
 
 # link required hifi libraries
-link_hifi_libraries(app shared networking app gpu gl ui controllers plugins)
+link_hifi_libraries(shared gl ui controllers plugins)
 
 target_glew()
 target_opengl()

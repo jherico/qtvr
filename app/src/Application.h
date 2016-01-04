@@ -1,7 +1,7 @@
-#include <app/RenderableApplication.h>
+#include <UiApplication.h>
 
-class Application : public RenderableApplication {
+class Application : public UiApplication {
     Q_OBJECT
 public:
-    Application(int& argc, char** argv, QElapsedTimer& startup_time) : RenderableApplication(argc, argv, startup_time) {}
+    Application(int& argc, char** argv) : UiApplication(argc, argv) {}
 };
