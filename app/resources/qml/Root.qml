@@ -10,27 +10,10 @@ Root {
     
     RootMenu {}
     
-    Row {
-        spacing: 8
-        Text { 
-            text: "File"
-            font.pointSize: 24
-        }
-        Text { 
-            text: "Edit" 
-            font.pointSize: 24
-        }
-    }
-    
-    Rectangle {
-        anchors.fill: parent
-        color: "#7fff0000"
-    }
-    
     Rectangle {
         width: 50
         height: 50
-        y: 20
+        y: 0
         color: "red"
         ColorAnimation on color {
             id: animation

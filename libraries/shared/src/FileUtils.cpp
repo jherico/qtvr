@@ -84,3 +84,13 @@ QString FileUtils::standardPath(QString subfolder) {
     
     return path;
 }
+
+QByteArray FileUtils::readFileToByteArray(const QString & fileName) {
+    QFile f(fileName);
+    f.open(QFile::ReadOnly);
+    return f.readAll();
+}
+
+QString FileUtils::readFileToString(const QString & fileName) {
+    return QString(readFileToByteArray(fileName));
+}

@@ -34,15 +34,24 @@ class PresentThread : public QThread, public Dependency {
 public:
 
     PresentThread() {
-        connect(qApp, &QCoreApplication::aboutToQuit, [this]{
-            _shutdown = true;
+        connect(qApp, &HifiApplication::beforeAboutToQuit, [this] {
+            shutdown();
         });
     }
 
     ~PresentThread() {
-        _shutdown = true;
-        wait(); 
+        shutdown();
     }
+
+    void shutdown() {
+        if (isRunning()) {
+            Lock lock(_mutex);
+            _shutdown = true;
+            _condition.wait(lock, [&] { return !_shutdown;  });
+            qDebug() << "Present thread shutdown";
+        }
+    }
+
 
     void setNewDisplayPlugin(OpenGLDisplayPlugin* plugin) {
         Lock lock(_mutex);
@@ -117,6 +126,10 @@ public:
         }
         _window->doneCurrent();
         _window->context()->moveToThread(qApp->thread());
+
+        Lock lock(_mutex);
+        _shutdown = false;
+        _condition.notify_one();
     }
 
     void withMainThreadContext(std::function<void()> f) {
@@ -154,6 +167,7 @@ private:
     QThread* _mainThread { nullptr };
     OpenGLDisplayPlugin* _newPlugin { nullptr };
     GLWindow* _window { nullptr };
+    bool _hasShutdown { false };
 };
 
 OpenGLDisplayPlugin::OpenGLDisplayPlugin() {

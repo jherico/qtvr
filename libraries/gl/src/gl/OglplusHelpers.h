@@ -16,6 +16,7 @@
 #include <QtGlobal>
 
 #include <GLMHelpers.h>
+#include <MatrixStack.h>
 
 #define OGLPLUS_USE_GLCOREARB_H 0
 #define OGLPLUS_USE_GLEW 1
@@ -31,12 +32,12 @@
 #include <oglplus/gl.hpp>
 
 #include <oglplus/all.hpp>
-#include <oglplus/interop/glm.hpp>
 #include <oglplus/bound/texture.hpp>
 #include <oglplus/bound/framebuffer.hpp>
 #include <oglplus/bound/renderbuffer.hpp>
 #include <oglplus/shapes/wrapper.hpp>
 #include <oglplus/shapes/plane.hpp>
+#include <oglplus/interop/glm.hpp>
 
 #ifdef _WIN32
 #pragma warning(pop)
@@ -46,15 +47,22 @@
 
 using FramebufferPtr = std::shared_ptr<oglplus::Framebuffer>;
 using RenderbufferPtr = std::shared_ptr<oglplus::Renderbuffer>;
-using TexturePtr = std::shared_ptr<oglplus::Texture>;
 using ShapeWrapperPtr = std::shared_ptr<oglplus::shapes::ShapeWrapper>;
 using BufferPtr = std::shared_ptr<oglplus::Buffer>;
 using VertexArrayPtr = std::shared_ptr<oglplus::VertexArray>;
 using ProgramPtr = std::shared_ptr<oglplus::Program>;
 using Mat4Uniform = oglplus::Uniform<mat4>;
+using VertexShaderPtr = std::shared_ptr<oglplus::VertexShader>;
+using FragmentShaderPtr = std::shared_ptr<oglplus::FragmentShader>;
+using TexturePtr = std::shared_ptr<oglplus::Texture>;
+using ImagePtr = std::shared_ptr<oglplus::images::Image>;
+using UniformMap = std::map<std::string, uint32_t>;
 
 ProgramPtr loadDefaultShader();
 void compileProgram(ProgramPtr & result, const std::string& vs, const std::string& fs);
+ProgramPtr loadProgram(const QString & vsFile, const QString & fsFile);
+UniformMap getActiveUniforms(ProgramPtr & program);
+
 ShapeWrapperPtr loadPlane(ProgramPtr program, float aspect = 1.0f);
 ShapeWrapperPtr loadSphereSection(ProgramPtr program, float fov = PI / 3.0f * 2.0f, float aspect = 16.0f / 9.0f, int slices = 32, int stacks = 32);
     
@@ -190,4 +198,59 @@ private:
     Map _allTextures;
     Queue _readyTextures;
     uvec2 _size{ 1920, 1080 };
+};
+
+using Lambda = std::function<void()>;
+using LambdaList = std::list<Lambda>;
+
+inline void viewport(const uvec2 & size, const ivec2& position = ivec2(0)) {
+  oglplus::Context::Viewport(position.x, position.y, size.x, size.y);
+}
+
+ShapeWrapperPtr loadSphere(const std::initializer_list<const GLchar*>& names, ProgramPtr program);
+ShapeWrapperPtr loadSkybox(ProgramPtr program);
+ShapeWrapperPtr loadPlane(ProgramPtr program, float aspect);
+ImagePtr loadImage(const QString& path, bool flip = true);
+TexturePtr load2dTexture(const QString& path, uvec2 & outSize);
+TexturePtr load2dTexture(const QString& path);
+TexturePtr loadCubemapTexture(std::function<ImagePtr(int)> dataLoader);
+void renderGeometry(ShapeWrapperPtr & shape, ProgramPtr & program, const std::list<std::function<void()>> & list);
+
+class Stacks {
+public:
+    static MatrixStack & projection() {
+        static MatrixStack projection;
+        return projection;
+    }
+
+    static MatrixStack & modelview() {
+        static MatrixStack modelview;
+        return modelview;
+    }
+
+    template <typename Function>
+    static void withPush(MatrixStack & stack, Function f) {
+        stack.withPush(f);
+    }
+
+    template <typename Function>
+    static void withPush(MatrixStack & stack1, MatrixStack & stack2, Function f) {
+        stack1.withPush([&] {
+            stack2.withPush(f);
+        });
+    }
+
+    template <typename Function>
+    static void withPush(Function f) {
+        withPush(projection(), modelview(), f);
+    }
+
+    template <typename Function>
+    static void withIdentity(Function f) {
+        withPush(projection(), modelview(), [=] {
+            projection().identity();
+            modelview().identity();
+            f();
+        });
+    }
 };

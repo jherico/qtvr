@@ -13,12 +13,15 @@
 #define hifi_FileUtils_h
 
 #include <QString>
+#include <QByteArray>
 
 class FileUtils {
 
 public:
     static void locateFile(QString fileName);
     static QString standardPath(QString subfolder);
+    static QByteArray readFileToByteArray(const QString& file);
+    static QString readFileToString(const QString& file);
 
 };
 

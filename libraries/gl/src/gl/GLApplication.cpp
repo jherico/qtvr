@@ -22,8 +22,8 @@
 #include "QOpenGLContextWrapper.h"
 #include "GLWindow.h"
 
-Q_DECLARE_LOGGING_CATEGORY(interfaceapp)
-Q_DECLARE_LOGGING_CATEGORY(interfaceapp_timing)
+
+Q_LOGGING_CATEGORY(glapplication, "hifi.gl.applicaiton")
 
 // ON WIndows PC, NVidia Optimus laptop, we want to enable NVIDIA GPU
 // FIXME seems to be broken.
@@ -50,10 +50,8 @@ GLApplication::GLApplication(int& argc, char** argv)
     glewExperimental = true;
     GLenum err = glewInit();
     glGetError();
-    auto foo = glGenRenderbuffers;
 
-
-    qCDebug(interfaceapp) << "Created Display Window.";
+    qCDebug(glapplication) << "Created Display Window.";
 
     initializeGL();
 }

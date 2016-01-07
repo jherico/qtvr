@@ -11,9 +11,10 @@ endif()
 
 # grab the implementation and header files from src dirs
 file(GLOB_RECURSE APP_SRCS "src/*.cpp" "src/*.h")
+list(APPEND APP_SRCS "resources/ShadertoyVR.qrc")
 GroupSources("src")
 
-find_package(Qt5 COMPONENTS Gui Network OpenGL Qml Quick Svg WebEngine)
+find_package(Qt5 COMPONENTS Gui Network OpenGL Qml Quick Svg WebEngine Xml)
 
 if (APPLE)
   # configure CMake to use a custom Info.plist
@@ -82,7 +83,7 @@ message("${PROJECT_SOURCE_DIR}/src")
 
 
 target_include_directories(${TARGET_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(${TARGET_NAME} Qt5::Gui Qt5::Network Qt5::OpenGL Qt5::Qml Qt5::Quick Qt5::Svg Qt5::WebEngine)
+target_link_libraries(${TARGET_NAME} Qt5::Gui Qt5::Network Qt5::OpenGL Qt5::Qml Qt5::Quick Qt5::Svg Qt5::WebEngine Qt5::Xml)
 
 # Issue causes build failure unless we add this directory.  
 # See https://bugreports.qt.io/browse/QTBUG-43351  

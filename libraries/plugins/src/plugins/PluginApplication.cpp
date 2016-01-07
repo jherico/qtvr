@@ -61,11 +61,6 @@
 #include <ResourceCache.h>
 #include <UUID.h>
 
-Q_DECLARE_LOGGING_CATEGORY(interfaceapp)
-Q_DECLARE_LOGGING_CATEGORY(interfaceapp_timing)
-
-using namespace std;
-
 PluginApplication::PluginApplication(int& argc, char** argv)
     : GLApplication(argc, argv) {
 
@@ -147,8 +142,6 @@ void PluginApplication::submitGL() {
     }
 
     QOpenGLFramebufferObject::bindDefault();
-    auto size = _currentFramebuffer->size();
-    qDebug() << size.width() << " x " << size.height();
     GLuint finalTexture = _currentFramebuffer->texture();
     if (!finalTexture) {
         return;

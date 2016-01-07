@@ -8,11 +8,40 @@
 
 #include "GLWindow.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtGui/QOpenGLContext>
 #include <QtGui/QOpenGLDebugLogger>
 
 #include "GLHelpers.h"
 #include "QOpenGLContextWrapper.h"
+#include <QtGui/qevent.h>
+
+class CloseEventFilter : public QObject {
+    Q_OBJECT
+public:
+    CloseEventFilter(QObject *parent) : QObject(parent) {}
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) {
+        if (event->type() == QEvent::Close) {
+            GLWindow* window = dynamic_cast<GLWindow*>(obj);
+            if (window) {
+                qApp->quit();
+                return true;
+            }
+
+        }
+        return QObject::eventFilter(obj, event);
+    }
+};
+
+GLWindow::GLWindow(QObject* parent) {
+    installEventFilter(new CloseEventFilter(this));
+}
+
+void GLWindow::emitClosing() {
+    emit aboutToClose();
+}
 
 void GLWindow::createContext(QOpenGLContext* shareContext) {
     createContext(getDefaultOpenGLSurfaceFormat(), shareContext);
@@ -39,6 +68,9 @@ GLWindow::~GLWindow() {
 
 bool GLWindow::makeCurrent() {
     bool makeCurrentResult = _context->makeCurrent(this);
+    if (!makeCurrentResult) {
+        qDebug() << "Bad";
+    }
     Q_ASSERT(makeCurrentResult);
     
     std::call_once(_reportOnce, []{
@@ -66,3 +98,5 @@ QOpenGLContextWrapper* GLWindow::context() const {
 }
 
 
+
+#include "GLWindow.moc"
