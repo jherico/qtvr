@@ -16,6 +16,7 @@
 
 
 class GLWindow;
+class QOpenGLContext;
 class OffscreenGLCanvas;
 
 class GLApplication : public HifiApplication  {
@@ -48,6 +49,8 @@ protected:
     virtual void paintGL();
     virtual void resizeGL();
     virtual void submitGL();
+    virtual QOpenGLContext* getPrimaryRenderingContext();
+    virtual bool makePrimaryRenderingContextCurrent();
 
 
     bool _inPaint { false };

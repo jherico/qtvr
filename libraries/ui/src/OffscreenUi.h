@@ -12,50 +12,91 @@
 #ifndef hifi_OffscreenUi_h
 #define hifi_OffscreenUi_h
 
-#include <QMessageBox>
+#include <QtCore/QVariant>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
+#include <QtWidgets/QInputDialog>
+
 #include <DependencyManager.h>
 
 #include "OffscreenQmlSurface.h"
 #include "OffscreenQmlElement.h"
 
-class OffscreenUi : public OffscreenQmlSurface {
+
+class OffscreenUi : public OffscreenQmlSurface, public Dependency {
     Q_OBJECT
 
 public:
     OffscreenUi();
     virtual void create(QOpenGLContext* context) override;
+    void createDesktop(const QUrl& url);
     void show(const QUrl& url, const QString& name, std::function<void(QQmlContext*, QObject*)> f = [](QQmlContext*, QObject*) {});
     void toggle(const QUrl& url, const QString& name, std::function<void(QQmlContext*, QObject*)> f = [](QQmlContext*, QObject*) {});
     bool shouldSwallowShortcut(QEvent* event);
     bool navigationFocused();
     void setNavigationFocused(bool focused);
+    void unfocusWindows();
+    void toggleMenu(const QPoint& screenCoordinates);
 
-    // Messagebox replacement functions
-    using ButtonCallback = std::function<void(QMessageBox::StandardButton)>;
-    static ButtonCallback NO_OP_CALLBACK;
+    QQuickItem* getDesktop();
+    QQuickItem* getToolWindow();
+    QObject* getMenu();
 
-    static void messageBox(const QString& title, const QString& text,
-        ButtonCallback f,
-        QMessageBox::Icon icon,
-        QMessageBox::StandardButtons buttons);
 
-    static void information(const QString& title, const QString& text,
-        ButtonCallback callback = NO_OP_CALLBACK,
-        QMessageBox::StandardButtons buttons = QMessageBox::Ok);
+    /// Same design as QMessageBox::critical(), will block, returns result
+    static QMessageBox::StandardButton critical(void* ignored, const QString& title, const QString& text,
+        QMessageBox::StandardButtons buttons = QMessageBox::Ok,
+        QMessageBox::StandardButton defaultButton = QMessageBox::NoButton) {
+        return critical(title, text, buttons, defaultButton);
+    }
+    /// Same design as QMessageBox::information(), will block, returns result
+    static QMessageBox::StandardButton information(void* ignored, const QString& title, const QString& text,
+        QMessageBox::StandardButtons buttons = QMessageBox::Ok,
+        QMessageBox::StandardButton defaultButton = QMessageBox::NoButton) {
+        return information(title, text, buttons, defaultButton);
+    }
+    /// Same design as QMessageBox::question(), will block, returns result
+    static QMessageBox::StandardButton question(void* ignored, const QString& title, const QString& text,
+        QMessageBox::StandardButtons buttons = QMessageBox::Ok,
+        QMessageBox::StandardButton defaultButton = QMessageBox::NoButton) {
+        return question(title, text, buttons, defaultButton);
+    }
+    /// Same design as QMessageBox::warning(), will block, returns result
+    static QMessageBox::StandardButton warning(void* ignored, const QString& title, const QString& text,
+        QMessageBox::StandardButtons buttons = QMessageBox::Ok,
+        QMessageBox::StandardButton defaultButton = QMessageBox::NoButton) {
+        return warning(title, text, buttons, defaultButton);
+    }
 
-    static void question(const QString& title, const QString& text,
-        ButtonCallback callback = NO_OP_CALLBACK,
-        QMessageBox::StandardButtons buttons = QMessageBox::StandardButtons(QMessageBox::Yes | QMessageBox::No));
+    static QMessageBox::StandardButton critical(const QString& title, const QString& text,
+        QMessageBox::StandardButtons buttons = QMessageBox::Ok,
+        QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
+    static QMessageBox::StandardButton information(const QString& title, const QString& text,
+        QMessageBox::StandardButtons buttons = QMessageBox::Ok,
+        QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
+    static QMessageBox::StandardButton question(const QString& title, const QString& text,
+        QMessageBox::StandardButtons buttons = QMessageBox::Ok,
+        QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
+    static QMessageBox::StandardButton warning(const QString& title, const QString& text,
+        QMessageBox::StandardButtons buttons = QMessageBox::Ok,
+        QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
 
-    static void warning(const QString& title, const QString& text,
-        ButtonCallback callback = NO_OP_CALLBACK,
-        QMessageBox::StandardButtons buttons = QMessageBox::Ok);
+    Q_INVOKABLE QMessageBox::StandardButton messageBox(QMessageBox::Icon icon, const QString& title, const QString& text, QMessageBox::StandardButtons buttons, QMessageBox::StandardButton defaultButton);
+    Q_INVOKABLE QVariant inputDialog(const QString& query, const QString& placeholderText = QString(), const QString& currentValue = QString());
 
-    static void critical(const QString& title, const QString& text,
-        ButtonCallback callback = NO_OP_CALLBACK,
-        QMessageBox::StandardButtons buttons = QMessageBox::Ok);
+    // FIXME implement
+    static QVariant query(const QString& query, const QString& placeholderText = QString(), const QString& currentValue = QString());
 
-    static void error(const QString& text);  // Interim dialog in new style
+    // FIXME implement
+    // Compatibility with QFileDialog::getOpenFileName
+    static QString getOpenFileName(void* ignored, const QString &caption = QString(), const QString &dir = QString(), const QString &filter = QString(), QString *selectedFilter = 0, QFileDialog::Options options = 0);
+
+    // Compatibility with QInputDialog::getText
+    static QString getText(void* ignored, const QString & title, const QString & label, QLineEdit::EchoMode mode = QLineEdit::Normal, const QString & text = QString(), bool * ok = 0, Qt::WindowFlags flags = 0, Qt::InputMethodHints inputMethodHints = Qt::ImhNone);
+
+private:
+    QQuickItem* _desktop { nullptr };
+    QQuickItem* _toolWindow { nullptr };
 };
 
 #endif

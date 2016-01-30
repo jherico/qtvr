@@ -42,6 +42,10 @@ public:
     virtual void create(QOpenGLContext* context);
     void resize(const QSize& size);
     QSize size() const;
+
+    Q_INVOKABLE void executeOnUiThread(std::function<void()> function);
+    Q_INVOKABLE QVariant returnFromUiThread(std::function<QVariant()> function);
+
     Q_INVOKABLE QObject* load(const QUrl& qmlSource, std::function<void(QQmlContext*, QObject*)> f = [](QQmlContext*, QObject*) {});
     Q_INVOKABLE QObject* load(const QString& qmlSourceFile, std::function<void(QQmlContext*, QObject*)> f = [](QQmlContext*, QObject*) {}) {
         return load(QUrl(qmlSourceFile), f);

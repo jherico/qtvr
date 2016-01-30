@@ -50,6 +50,7 @@ protected:
     ovrFovPort _eyeFovs[2];
     ovrHmdDesc _hmdDesc;
     ovrLayerEyeFov _sceneLayer;
+    ovrLayerQuad _overlayLayer;
 };
 
 #if (OVR_MAJOR_VERSION == 6) 

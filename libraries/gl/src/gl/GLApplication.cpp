@@ -104,6 +104,12 @@ void GLApplication::internalPaintGL() {
 
     _frameCount++;
 
+    static auto startTime = secTimestampNow();
+    if ((_frameCount % 500) == 0) {
+        auto interval = (float)(startTime - secTimestampNow());
+        auto fps = ((float)_frameCount / interval);
+        qDebug() << "FPS " << fps;
+    }
     PROFILE_RANGE(__FUNCTION__);
     resizeGL();
     prePaintGL();
@@ -137,4 +143,12 @@ bool GLApplication::event(QEvent* event) {
 
 GLWindow* GLApplication::getWindow() {
     return _window;
+}
+
+QOpenGLContext* GLApplication::getPrimaryRenderingContext() {
+    return _window->context()->getContext();
+}
+
+bool GLApplication::makePrimaryRenderingContextCurrent() {
+    return _window->makeCurrent();
 }

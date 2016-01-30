@@ -146,11 +146,6 @@ static const QString MONO_PREVIEW = "Mono Preview";
 static const QString FRAMERATE = DisplayPlugin::MENU_PATH() + ">Framerate";
 
 void OculusDisplayPlugin::activate() {
-    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, MENU_PATH(), MONO_PREVIEW,
-    //    [this](bool clicked) {
-    //        _monoPreview = clicked;
-    //    }, true, true);
-    //_container->removeMenu(FRAMERATE);
     OculusBaseDisplayPlugin::activate();
 }
 
@@ -164,6 +159,14 @@ void OculusDisplayPlugin::customizeContext() {
     _sceneLayer.ColorTexture[0] = _sceneFbo->color;
     // not needed since the structure was zeroed on init, but explicit
     _sceneLayer.ColorTexture[1] = nullptr;
+
+
+    _overlayFbo = SwapFboPtr(new SwapFramebufferWrapper(_session));
+    _overlayFbo->Init(getRecommendedUiSize());
+    _overlayLayer.ColorTexture = _overlayFbo->color;
+
+    _layers[0] = &_sceneLayer.Header;
+    _layers[1] = &_overlayLayer.Header;
 
     enableVsync(false);
     // Only enable mirroring if we know vsync is disabled
@@ -211,6 +214,19 @@ void OculusDisplayPlugin::internalPresent() {
         drawUnitQuad();
         //glDisable(GL_FRAMEBUFFER_SRGB);
     });
+    _overlayFbo->Bound([&] {
+        auto size = _overlayFbo->size;
+        Context::Viewport(size.x, size.y);
+        Context::ClearColor(0, 0, 0, 0);
+        Context::Clear().ColorBuffer().DepthBuffer();
+        Context::Enable(Capability::Blend);
+        Context::BlendFunc(BlendFunction::SrcAlpha, BlendFunction::OneMinusSrcAlpha);
+        glBindTexture(GL_TEXTURE_2D, _currentOverlayTexture);
+        GLenum err = glGetError();
+        drawUnitQuad();
+        Context::Disable(Capability::Blend);
+    });
+
 
     uint32_t frameIndex { 0 };
     EyePoses eyePoses;
@@ -231,13 +247,24 @@ void OculusDisplayPlugin::internalPresent() {
         viewScaleDesc.HmdToEyeViewOffset[0] = _eyeOffsets[0];
         viewScaleDesc.HmdToEyeViewOffset[1] = _eyeOffsets[1];
 
-        ovrLayerHeader* layers = &_sceneLayer.Header;
-        ovrResult result = ovr_SubmitFrame(_session, frameIndex, &viewScaleDesc, &layers, 1);
+        // ...and now the new quad
+        _overlayLayer.Viewport.Pos.x = 0;
+        _overlayLayer.Viewport.Pos.y = 0;
+        _overlayLayer.Viewport.Size.w = _overlayFbo->size.x;
+        _overlayLayer.Viewport.Size.h = _overlayFbo->size.y;
+        memset(&_overlayLayer.QuadPoseCenter, 0, sizeof(_overlayLayer.QuadPoseCenter));
+        _overlayLayer.QuadPoseCenter.Orientation.w = 1;
+        _overlayLayer.QuadPoseCenter.Position.z = -0.5f;
+        _overlayLayer.QuadSize.x = 0.8f;
+        _overlayLayer.QuadSize.y = 0.45f;
+
+        ovrResult result = ovr_SubmitFrame(_session, frameIndex, &viewScaleDesc, _layers, 2);
         if (!OVR_SUCCESS(result)) {
             qDebug() << result;
         }
     }
     _sceneFbo->Increment();
+    _overlayFbo->Increment();
 
     /*
     The swapbuffer call here is only required if we want to mirror the content to the screen.

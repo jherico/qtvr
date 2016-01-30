@@ -7,9 +7,11 @@
 
 #include <gl/GLWindow.h>
 #include <Platform.h>
+#include <plugins/DisplayPlugin.h>
+#include <gl/OglplusHelpers.h>
 
 
-Application::Application(int& argc, char** argv) : UiApplication(argc, argv) {
+Application::Application(int& argc, char** argv) : PluginApplication(QUrl::fromLocalFile("shadertoy/AppDesktop.qml"), argc, argv) {
     getWindow()->setGeometry(100, -980, 800, 600);
     Q_INIT_RESOURCE(ShadertoyVR);
     _renderer.setup();
@@ -27,5 +29,20 @@ void Application::aboutToQuit() {
 }
 
 void Application::paintGL() {
-    _renderer.render();
+    auto displayPlugin = getActiveDisplayPlugin();
+    MatrixStack & mv = Stacks::modelview();
+    MatrixStack & pr = Stacks::projection();
+    auto size = displayPlugin->getRecommendedRenderSize();
+    using namespace oglplus;
+    if (displayPlugin->isHmd()) {
+        for_each_eye([&] (Eye eye){
+            Context::Viewport(eye == Eye::Left ? 0 : size.x / 2, 0, size.x / 2, size.y);
+            pr.top() = displayPlugin->getProjection(eye, mat4());
+            mv.top() = glm::inverse(displayPlugin->getHeadPose(getFrameCount()));
+            _renderer.render();
+        });
+    } else {
+        Context::Viewport(size.x, size.y);
+        _renderer.render();
+    }
 }

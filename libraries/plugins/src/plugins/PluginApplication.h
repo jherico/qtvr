@@ -27,6 +27,7 @@
 #include "Forward.h"
 
 #include <gl/FboCache.h>
+#include <UiApplication.h>
 
 class OffscreenGLCanvas;
 
@@ -34,11 +35,11 @@ namespace controller {
     class StateController;
 }
 
-class PluginApplication : public GLApplication  {
+class PluginApplication : public UiApplication  {
     Q_OBJECT
     
 public:
-    PluginApplication(int& argc, char** argv);
+    PluginApplication(const QUrl& desktopUrl, int& argc, char** argv);
     virtual ~PluginApplication();
 
     virtual void initializeGL() override;
@@ -51,17 +52,18 @@ public:
 
     float getTargetFrameRate(); // frames/second
 
-    void setActiveDisplayPlugin(const QString& pluginName);
     DisplayPluginPointer getActiveDisplayPlugin();
     const DisplayPluginPointer getActiveDisplayPlugin() const;
 
     float getRenderResolutionScale() const;
 
     void releaseSceneTexture(uint32_t texture);
-    virtual void releaseOverlayTexture(uint32_t texture) {}
+    virtual void releaseOverlayTexture(uint32_t texture);
     void setFullscreen(QScreen* screen);
     void unsetFullscreen();
-    void makeRenderingContextCurrent();
+
+    QOpenGLContext* getPrimaryRenderingContext() override;
+    bool makePrimaryRenderingContextCurrent() override;
 
     
 signals:
@@ -70,13 +72,16 @@ signals:
 public slots:
     void resetSensors(bool andReload = false);
     virtual void idle() override;
+    void setActiveDisplayPlugin(QString);
 
 protected slots:
     void updateDisplayMode();
     void updateInputModes();
-    
+
 protected:
+    virtual void updateOverlayTexture(uint32_t textureId) override;
     virtual void cleanupBeforeQuit() override;
+    virtual void initializeUI(const QUrl& desktopUrl) override;
     void update(float deltaTime);
 
     OffscreenGLCanvas* _offscreenContext { nullptr };

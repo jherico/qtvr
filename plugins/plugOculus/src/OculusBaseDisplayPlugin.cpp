@@ -79,7 +79,6 @@ void OculusBaseDisplayPlugin::deinit() {
 }
 
 void OculusBaseDisplayPlugin::activate() {
-    WindowOpenGLDisplayPlugin::activate();
     if (!OVR_SUCCESS(ovr_Initialize(nullptr))) {
         qFatal("Could not init OVR");
     }
@@ -135,10 +134,16 @@ void OculusBaseDisplayPlugin::activate() {
         _sceneLayer.Viewport[eye].Pos = { eye == ovrEye_Left ? 0 : size.w, 0 };
     });
 
+    // Parent class relies on our _session intialization, so it must come after that.
+    memset(&_overlayLayer, 0, sizeof(ovrLayerQuad));
+    _overlayLayer.Header.Type = ovrLayerType_Quad;
+    _overlayLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;
+
     if (!OVR_SUCCESS(ovr_ConfigureTracking(_session,
         ovrTrackingCap_Orientation | ovrTrackingCap_Position | ovrTrackingCap_MagYawCorrection, 0))) {
         qFatal("Could not attach to sensor device");
     }
+    WindowOpenGLDisplayPlugin::activate();
 }
 
 void OculusBaseDisplayPlugin::deactivate() {

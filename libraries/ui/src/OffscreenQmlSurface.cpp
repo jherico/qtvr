@@ -28,6 +28,7 @@
 #include <DependencyManager.h>
 #include <NumericalConstants.h>
 
+#define THREADED_QML 1
 // Time between receiving a request to render the offscreen UI actually triggering
 // the render.  Could possibly be increased depending on the framerate we expect to
 // achieve.
@@ -78,11 +79,13 @@ public:
         _quickWindow->setFlags(_quickWindow->flags() | static_cast<Qt::WindowFlags>(Qt::WA_TranslucentBackground));
 
         // Qt 5.5
+#if THREADED_QML
         _renderControl->prepareThread(&_thread);
         getContextObject()->moveToThread(&_thread);
         moveToThread(&_thread);
         _thread.setObjectName("QML Thread");
         _thread.start();
+#endif
         post(INIT);
     }
 
@@ -116,9 +119,19 @@ public:
             return QObject::event(e);
         }
     }
-
     void post(const QEvent::Type& type) {
+
+#if THREADED_QML
         QCoreApplication::postEvent(this, new QEvent(type));
+#else
+        QMutexLocker lock(&_mutex);
+        switch (type) {
+            case INIT: init(); break;
+            case RENDER: render(&lock); break;
+            case RESIZE: resize(); break;
+            case STOP: cleanup(); break;
+        }
+#endif
     }
 
 
@@ -228,6 +241,12 @@ private:
         {
             PROFILE_RANGE("qml_render")
             TexturePtr texture = _textures.getNextTexture();
+            static auto lastTextureCount = _textures._allTextures.size();
+            auto textureCount = _textures._allTextures.size();;
+            if (textureCount != lastTextureCount) {
+                lastTextureCount = textureCount;
+                qDebug() << "Now consuming " << textureCount << " textures";
+            }
             _fbo->Bind(Framebuffer::Target::Draw);
             _fbo->AttachTexture(Framebuffer::Target::Draw, FramebufferAttachment::Color, *texture, 0);
             _fbo->Complete(Framebuffer::Target::Draw);
@@ -253,6 +272,7 @@ private:
 
     static const uint64_t MAX_SHUTDOWN_WAIT_SECS = 5;
     void stop() {
+#if THREADED_QML
         if (_thread.isRunning()) {
             qDebug() << "Stopping QML render thread " << _thread.currentThreadId();
             {
@@ -278,6 +298,10 @@ private:
         } else {
             qDebug() << "QML render thread already completed";
         }
+#else 
+        QMutexLocker lock(&_mutex);
+        post(STOP);
+#endif
     }
 
     bool allowNewFrame(uint8_t fps) {
@@ -290,7 +314,9 @@ private:
     QQuickWindow* _quickWindow{ nullptr };
     QMyQuickRenderControl* _renderControl{ nullptr };
 
+#if THREADED_QML
     QThread _thread;
+#endif
     QMutex _mutex;
     QWaitCondition _cond;
     QMutex _quitMutex;
@@ -461,9 +487,13 @@ void OffscreenQmlSurface::updateQuick() {
     }
 
     if (_render) {
+#if  THREADED_QML 
         QMutexLocker lock(&(_renderer->_mutex));
         _renderer->post(RENDER);
         _renderer->_cond.wait(&(_renderer->_mutex));
+#else
+        _renderer->post(RENDER);
+#endif
         _render = false;
     }
 
@@ -476,7 +506,9 @@ void OffscreenQmlSurface::updateQuick() {
                 _currentTexture = 0;
             }
             _currentTexture = newTexture;
-            _textureLocks[_currentTexture] = 0;
+            Q_ASSERT(0 == _textureLocks.count(_currentTexture));
+            // Set to 1 to represent my own lock that I will release in the above block
+            _textureLocks[_currentTexture] = 1;
         }
         emit textureUpdated(_currentTexture);
     }
@@ -489,16 +521,19 @@ uint32_t OffscreenQmlSurface::getTexture() const {
 
 void OffscreenQmlSurface::lockTexture(uint32_t texture) {
     Lock lock(_mutex);
+    Q_ASSERT(_textureLocks.count(texture));
     auto& useCount = _textureLocks[texture];
     ++useCount;
 }
 
 void OffscreenQmlSurface::releaseTexture(uint32_t texture) {
     Lock lock(_mutex);
+    Q_ASSERT(_textureLocks.count(texture));
     releaseTextureInternal(texture);
 }
 
 void OffscreenQmlSurface::releaseTextureInternal(uint32_t texture) {
+    Q_ASSERT(_textureLocks.count(texture));
     auto& useCount = _textureLocks[texture];
     --useCount;
     if (0 == useCount) {
@@ -640,3 +675,29 @@ QQmlContext* OffscreenQmlSurface::getRootContext() {
     return _qmlEngine->rootContext();
 }
 
+Q_DECLARE_METATYPE(std::function<void()>);
+static auto VoidLambdaType = qRegisterMetaType<std::function<void()>>();
+Q_DECLARE_METATYPE(std::function<QVariant()>);
+static auto VariantLambdaType = qRegisterMetaType<std::function<QVariant()>>();
+
+void OffscreenQmlSurface::executeOnUiThread(std::function<void()> function) {
+    if (QThread::currentThread() != thread()) {
+        QMetaObject::invokeMethod(this, "executeOnUiThread", Qt::QueuedConnection,
+            Q_ARG(std::function<void()>, function));
+        return;
+    }
+
+    function();
+}
+
+QVariant OffscreenQmlSurface::returnFromUiThread(std::function<QVariant()> function) {
+    if (QThread::currentThread() != thread()) {
+        QVariant result;
+        QMetaObject::invokeMethod(this, "returnFromUiThread", Qt::BlockingQueuedConnection,
+            Q_RETURN_ARG(QVariant, result),
+            Q_ARG(std::function<QVariant()>, function));
+        return result;
+    }
+
+    return function();
+}

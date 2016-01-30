@@ -27,6 +27,7 @@
 
 #include "../../PluginApplication.h"
 
+#if THREADED_PRESENT
 class PresentThread : public QThread, public Dependency {
     using Mutex = std::mutex;
     using Condition = std::condition_variable;
@@ -170,15 +171,17 @@ private:
     bool _hasShutdown { false };
 };
 
+#endif
+
 OpenGLDisplayPlugin::OpenGLDisplayPlugin() {
     _sceneTextureEscrow.setRecycler([this](GLuint texture){
         cleanupForSceneTexture(texture);
         qApp->releaseSceneTexture(texture);
     });
 
-    _overlayTextureEscrow.setRecycler([this](GLuint texture) {
-        qApp->releaseOverlayTexture(texture);
-    });
+    //_overlayTextureEscrow.setRecycler([this](GLuint texture) {
+    //    qApp->releaseOverlayTexture(texture);
+    //});
 
     connect(&_timer, &QTimer::timeout, this, [&] {
 #ifdef Q_OS_MAC
@@ -202,9 +205,10 @@ void OpenGLDisplayPlugin::cleanupForSceneTexture(uint32_t sceneTexture) {
 
 
 void OpenGLDisplayPlugin::activate() {
-    _timer.start(1);
     _vsyncSupported = true; // _container->getPrimaryWindow()->isVsyncSupported();
 
+#if THREADED_PRESENT
+    _timer.start(1);
     // Start the present thread if necessary
     auto presentThread = DependencyManager::get<PresentThread>();
     if (!presentThread) {
@@ -219,7 +223,14 @@ void OpenGLDisplayPlugin::activate() {
         presentThread->start();
     }
     presentThread->setNewDisplayPlugin(this);
+#else
+    qApp->getWindow()->makeCurrent();
+    customizeContext();
+    qApp->makePrimaryRenderingContextCurrent();
+#endif
     DisplayPlugin::activate();
+
+    
 }
 
 void OpenGLDisplayPlugin::stop() {
@@ -227,19 +238,26 @@ void OpenGLDisplayPlugin::stop() {
 }
 
 void OpenGLDisplayPlugin::deactivate() {
+#if THREADED_PRESENT
     {
         Lock lock(_mutex);
         _deactivateWait.wait(lock, [&]{ return _uncustomized; });
     }
     _timer.stop();
+#else
+    qApp->getWindow()->makeCurrent();
+    uncustomizeContext();
+    qApp->makePrimaryRenderingContextCurrent();
+#endif
     DisplayPlugin::deactivate();
 }
 
 void OpenGLDisplayPlugin::customizeContext() {
+#if THREADED_PRESENT
     _uncustomized = false;
     auto presentThread = DependencyManager::get<PresentThread>();
     Q_ASSERT(thread() == presentThread->thread());
-
+#endif
     enableVsync();
 
     using namespace oglplus;
@@ -308,16 +326,25 @@ void OpenGLDisplayPlugin::submitSceneTexture(uint32_t frameIndex, uint32_t scene
 
     // Submit it to the presentation thread via escrow
     _sceneTextureEscrow.submit(sceneTexture);
+
+#if THREADED_PRESENT
+#else
+    auto window = qApp->getWindow();
+    window->makeCurrent();
+    present();
+    window->doneCurrent();
+    qApp->makePrimaryRenderingContextCurrent();
+#endif
 }
 
-void OpenGLDisplayPlugin::submitOverlayTexture(GLuint sceneTexture, const glm::uvec2& sceneSize) {
+void OpenGLDisplayPlugin::submitOverlayTexture(GLuint overlayTexture, const glm::uvec2& sceneSize) {
     // Submit it to the presentation thread via escrow
-    _overlayTextureEscrow.submit(sceneTexture);
+    _currentOverlayTexture = overlayTexture;
 }
 
 void OpenGLDisplayPlugin::updateTextures() {
     _currentSceneTexture = _sceneTextureEscrow.fetchAndRelease(_currentSceneTexture);
-    _currentOverlayTexture = _overlayTextureEscrow.fetchAndRelease(_currentOverlayTexture);
+    //_currentOverlayTexture = _overlayTextureEscrow.fetchAndRelease(_currentOverlayTexture);
 }
 
 void OpenGLDisplayPlugin::updateFramerate() {
@@ -355,6 +382,11 @@ void OpenGLDisplayPlugin::present() {
         internalPresent();
         updateFramerate();
     }
+
+#if THREADED_PRESENT 
+#else
+    emit requestRender();
+#endif
 }
 
 float OpenGLDisplayPlugin::presentRate() {
@@ -399,9 +431,13 @@ void OpenGLDisplayPlugin::swapBuffers() {
 }
 
 void OpenGLDisplayPlugin::withMainThreadContext(std::function<void()> f) const {
+#if THREADED_PRESENT
     static auto presentThread = DependencyManager::get<PresentThread>();
     presentThread->withMainThreadContext(f);
-    qApp->makeRenderingContextCurrent();
+    qApp->makePrimaryRenderingContextCurrent();
+#else
+    f();
+#endif
 }
 
 QImage OpenGLDisplayPlugin::getScreenshot() const {
@@ -413,8 +449,10 @@ QImage OpenGLDisplayPlugin::getScreenshot() const {
     return result;
 }
 
+#if THREADED_PRESENT
 void OpenGLDisplayPlugin::enableDeactivate() {
     Lock lock(_mutex);
     _uncustomized = true;
     _deactivateWait.notify_one();
 }
+#endif

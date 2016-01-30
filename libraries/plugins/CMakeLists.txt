@@ -1,6 +1,6 @@
 set(TARGET_NAME plugins)
 setup_hifi_library(OpenGL)
-link_hifi_libraries(shared gl controllers)
+link_hifi_libraries(shared gl ui controllers)
 
 GroupSources("src/plugins")
 

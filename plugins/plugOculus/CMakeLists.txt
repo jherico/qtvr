@@ -13,7 +13,7 @@ if (WIN32)
 
     set(TARGET_NAME plugOculus)
     setup_hifi_plugin()
-    link_hifi_libraries(shared gl plugins)
+    link_hifi_libraries(shared gl ui plugins)
     
     add_dependency_external_projects(LibOVR)
     find_package(LibOVR REQUIRED)

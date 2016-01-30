@@ -9,27 +9,32 @@
 #ifndef hifi_UiApplication_h
 #define hifi_UiApplication_h
 
-#include <plugins/PluginApplication.h>
+#include <gl/GLApplication.h>
 
 class OffscreenUi;
 
-class UiApplication : public PluginApplication  {
+class UiApplication : public GLApplication {
     Q_OBJECT
     
 public:
-    UiApplication(int& argc, char** argv);
+    UiApplication(const QUrl& desktopUrl, int& argc, char** argv);
     virtual ~UiApplication();
-
-    void initializeUI();
-    void resizeGL();
 
     OffscreenUi* getOffscreenUi() { return _offscreenUi; }
     const OffscreenUi* getOffscreenUi() const { return _offscreenUi; }
 
+protected slots:
+    virtual void updateOverlayTexture(uint32_t textureId);
+
 protected:
     virtual void cleanupBeforeQuit() override;
+    virtual void onAction(int action, float value);
 
-private:
+    virtual void initializeUI(const QUrl& desktopUrl);
+    void resizeGL();
+    void resizeUi(const glm::uvec2& newSize);
+
+protected:
     OffscreenUi* _offscreenUi { nullptr };
     uint32_t _uiTexture { 0 };
     bool _reticleClickPressed { false };

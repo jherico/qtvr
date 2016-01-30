@@ -1,9 +1,9 @@
-#include <UiApplication.h>
+#include <plugins/PluginApplication.h>
 
 #include "shadertoy/Shadertoy.h"
 #include "shadertoy/Renderer.h"
 
-class Application : public UiApplication {
+class Application : public PluginApplication {
     Q_OBJECT
 public:
     Application(int& argc, char** argv);

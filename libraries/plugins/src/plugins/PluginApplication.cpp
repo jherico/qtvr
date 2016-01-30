@@ -60,9 +60,10 @@
 #include <PerfStat.h>
 #include <ResourceCache.h>
 #include <UUID.h>
+#include <OffscreenUi.h>
 
-PluginApplication::PluginApplication(int& argc, char** argv)
-    : GLApplication(argc, argv) {
+PluginApplication::PluginApplication(const QUrl& desktopUrl, int& argc, char** argv)
+    : UiApplication(desktopUrl, argc, argv) {
 
     DependencyManager::set<UserInputMapper>();
 
@@ -96,14 +97,17 @@ void PluginApplication::initializeGL() {
     _offscreenContext = new OffscreenGLCanvas();
     _offscreenContext->create(getWindow()->context()->getContext());
     _offscreenContext->makeCurrent();
+    getActiveDisplayPlugin()->idle();
 }
 
 void PluginApplication::resizeGL() {
-    GLApplication::resizeGL();
+    UiApplication::resizeGL();
 
     if (!_displayPlugin) {
         return;
     }
+
+    resizeUi(_displayPlugin->getRecommendedUiSize());
 
     PROFILE_RANGE(__FUNCTION__);
     auto displayPlugin = getActiveDisplayPlugin();
@@ -153,7 +157,25 @@ void PluginApplication::submitGL() {
     // deliver final scene to the display plugin
     auto displayPlugin = getActiveDisplayPlugin();
 
+    mat4 headPose = displayPlugin->getHeadPose(getFrameCount());
     {
+        // FIXME we probably don't need to set the projection matrix every frame,
+        // only when the display plugin changes (or in non-HMD modes when the user
+        // changes the FOV manually, which right now I don't think they can.
+        for_each_eye([&](Eye eye) {
+            // For providing the stereo eye views, the HMD head pose has already been
+            // applied to the avatar, so we need to get the difference between the head
+            // pose applied to the avatar and the per eye pose, and use THAT as
+            // the per-eye stereo matrix adjustment.
+            mat4 eyeToHead = displayPlugin->getEyeToHeadTransform(eye);
+            // Grab the translation
+            vec3 eyeOffset = glm::vec3(eyeToHead[3]);
+            // Apply IPD scaling
+            mat4 eyeOffsetTransform = glm::translate(mat4(), eyeOffset * -1.0f);
+            displayPlugin->setEyeRenderPose(getFrameCount(), eye, headPose);
+        });
+
+
         PROFILE_RANGE(__FUNCTION__ "/pluginSubmitScene");
         const auto size = _fboCache.getSize();
         displayPlugin->submitSceneTexture(getFrameCount(), finalTexture, toGlm(size));
@@ -161,7 +183,8 @@ void PluginApplication::submitGL() {
 }
 
 void PluginApplication::idle() {
-    GLApplication::idle();
+    UiApplication::idle();
+    return;
     {
         PerformanceTimer perfTimer("pluginIdle");
         getActiveDisplayPlugin()->idle();
@@ -213,33 +236,11 @@ const DisplayPluginPointer PluginApplication::getActiveDisplayPlugin() const {
     return ((PluginApplication*)this)->getActiveDisplayPlugin();
 }
 
-static void addDisplayPluginToMenu(DisplayPluginPointer displayPlugin, bool active = false) {
-}
-
 void PluginApplication::updateDisplayMode() {
     auto displayPlugins = PluginManager::getInstance()->getDisplayPlugins();
-    static std::once_flag once;
-    std::call_once(once, [&] {
-        bool first = true;
-        foreach(auto displayPlugin, displayPlugins) {
-            addDisplayPluginToMenu(displayPlugin, first);
-            // This must be a queued connection to avoid a deadlock
-            QObject::connect(displayPlugin.get(), &DisplayPlugin::requestRender, [this] {
-                postEvent(this, new QEvent((QEvent::Type)CustomEventTypes::Render), Qt::HighEventPriority);
-            });
-            QObject::connect(displayPlugin.get(), &DisplayPlugin::recommendedFramebufferSizeChanged, [this](const QSize & size) {
-                resizeGL();
-            });
-
-            first = false;
-        }
-    });
-
-
     // Default to the first item on the list, in case none of the menu items match
     static DisplayPluginPointer primaryDisplayPlugin = displayPlugins.at(0);
-    
-    DisplayPluginPointer newDisplayPlugin = _newDisplayPlugin;
+   
     if (!_newDisplayPlugin) {
         _newDisplayPlugin = primaryDisplayPlugin;
     }
@@ -249,13 +250,18 @@ void PluginApplication::updateDisplayMode() {
         return;
     }
 
+
+    DisplayPluginPointer newDisplayPlugin = _newDisplayPlugin;
+
     // Some plugins *cough* Oculus *cough* process message events from inside their
     // display function, and we don't want to change the display plugin underneath
     // the paintGL call, so we need to guard against that
     if (_inPaint) {
         qDebug() << "Deferring plugin switch until out of painting";
         // Have the old plugin stop requesting renders
-        _displayPlugin->stop();
+        if (_displayPlugin) {
+            _displayPlugin->stop();
+        }
         QTimer* timer = new QTimer();
         timer->singleShot(500, [this, timer] {
             timer->deleteLater();
@@ -279,6 +285,35 @@ void PluginApplication::updateDisplayMode() {
 
     emit activeDisplayPluginChanged();
     resetSensors();
+
+    static std::once_flag once;
+    std::call_once(once, [&] {
+        QStringList plugins;
+        QString activePlugin;
+        foreach(auto displayPlugin, displayPlugins) {
+            plugins << displayPlugin->getName();
+
+            if (displayPlugin->isActive()) {
+                activePlugin = displayPlugin->getName();
+            }
+
+            // This must be a queued connection to avoid a deadlock
+            QObject::connect(displayPlugin.get(), &DisplayPlugin::requestRender, [this] {
+                //postEvent(this, new QEvent((QEvent::Type)CustomEventTypes::Render), Qt::HighEventPriority);
+                postEvent(this, new QEvent((QEvent::Type)CustomEventTypes::Render), Qt::LowEventPriority);
+            });
+
+            QObject::connect(displayPlugin.get(), &DisplayPlugin::recommendedFramebufferSizeChanged, [this](const QSize & size) {
+                resizeGL();
+            });
+        }
+        qDebug() << plugins;
+        auto menu = getOffscreenUi()->getMenu();
+        QObject::connect(menu, SIGNAL(activateDisplayPlugin(QString)), this, SLOT(setActiveDisplayPlugin(QString)));
+        QMetaObject::invokeMethod(menu, "setDisplayPlugins", Q_ARG(QVariant, plugins), Q_ARG(QVariant, activePlugin));
+    });
+
+
     Q_ASSERT_X(_displayPlugin, "PluginApplication::updateDisplayMode", "could not find an activated display plugin");
 }
 
@@ -326,7 +361,7 @@ void PluginApplication::updateInputModes() {
     }
 }
 
-void PluginApplication::setActiveDisplayPlugin(const QString& pluginName) {
+void PluginApplication::setActiveDisplayPlugin(QString pluginName) {
     foreach(DisplayPluginPointer displayPlugin, PluginManager::getInstance()->getDisplayPlugins()) {
         QString name = displayPlugin->getName();
         if (pluginName == name) {
@@ -341,8 +376,9 @@ void PluginApplication::releaseSceneTexture(uint32_t texture) {
     _fboCache.releaseTexture(texture);
 }
 
-void PluginApplication::makeRenderingContextCurrent() {
-    _offscreenContext->makeCurrent();
+
+void PluginApplication::releaseOverlayTexture(uint32_t texture) {
+    _offscreenUi->releaseTexture(texture);
 }
 
 float PluginApplication::getRenderResolutionScale() const {
@@ -353,4 +389,27 @@ void PluginApplication::setFullscreen(QScreen* screen) {
 }
 
 void PluginApplication::unsetFullscreen() {
+}
+
+void PluginApplication::updateOverlayTexture(uint32_t textureId) {
+    UiApplication::updateOverlayTexture(textureId);
+    auto displayPlugin = getActiveDisplayPlugin();
+    if (displayPlugin) {
+        displayPlugin->submitOverlayTexture(textureId, uvec2());
+    }
+}
+
+void PluginApplication::initializeUI(const QUrl& desktopUrl) {
+    UiApplication::initializeUI(desktopUrl);
+    // This will set up the input plugins UI
+    _activeInputPlugins.clear();
+    updateInputModes();
+}
+
+QOpenGLContext* PluginApplication::getPrimaryRenderingContext() {
+    return _offscreenContext->getContext();
+}
+
+bool PluginApplication::makePrimaryRenderingContextCurrent() {
+    return _offscreenContext->makeCurrent();
 }

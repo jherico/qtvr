@@ -18,9 +18,9 @@ macro(SETUP_HIFI_PLUGIN)
     endif()
 
     IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        set(PLUGIN_FULL_PATH "${CMAKE_BINARY_DIR}/${MAIN_APP_NAME}/${PLUGIN_PATH}/")
+        set(PLUGIN_FULL_PATH "${CMAKE_BINARY_DIR}/app/${PLUGIN_PATH}/")
     else()
-        set(PLUGIN_FULL_PATH "${CMAKE_BINARY_DIR}/${MAIN_APP_NAME}/$<CONFIGURATION>/${PLUGIN_PATH}/")
+        set(PLUGIN_FULL_PATH "${CMAKE_BINARY_DIR}/app/$<CONFIGURATION>/${PLUGIN_PATH}/")
     endif()
 
     # create the destination for the plugin binaries

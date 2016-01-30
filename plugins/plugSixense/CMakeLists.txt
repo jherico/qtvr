@@ -8,5 +8,5 @@
 
 set(TARGET_NAME plugSixense)
 setup_hifi_plugin(Qml)
-link_hifi_libraries(shared gl controllers plugins)
+link_hifi_libraries(shared gl controllers ui plugins)
 target_sixense()

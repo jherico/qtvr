@@ -37,5 +37,7 @@ private:
     QMap<uint32_t, EyePoses> _frameEyePoses;
 
     SwapFboPtr       _sceneFbo;
+    SwapFboPtr       _overlayFbo;
+    ovrLayerHeader*  _layers[2];
 };
 
