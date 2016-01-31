@@ -102,6 +102,8 @@ Window {
                     model: [ "5", "25", "50", "100" ]
                     currentIndex: 1
                 }
+
+                Button { text: "Fetch All";  onClicked: refreshAll(); }
             }
 
             ScrollView {
@@ -114,6 +116,51 @@ Window {
 
         Component { id: shaderPreviewBuilder; ShaderPreview {} }
         //Component { id: flowBuilder;  }
+
+        Timer {
+            id: fetchTimer;
+            running: false
+            repeat: true
+            interval: 500
+            onTriggered: fetchSomeShaders();
+        }
+    }
+
+    property var refreshAllList: [];
+
+    function fetchSomeShaders() {
+        if (refreshAllList.length === 0) {
+            console.log("Fetching done");
+            fetchTimer.stop();
+            return;
+        }
+
+        for (var i = 0; i < 10; ++i) {
+            if (refreshAllList.length) {
+                fetchSingleShader(refreshAllList[0]);
+                console.log(refreshAllList[0]);
+                refreshAllList.shift();
+            }
+        }
+        console.log(refreshAllList.length + " items remaining");
+    }
+
+    function fetchSingleShader(shaderId) {
+        console.log("Requesting item " + shaderId);
+        shadertoy.fetchShader(shaderId, function(newShaderData){
+            console.log("Persisted shader " + shaderId);
+        });
+    }
+
+    function refreshAll() {
+        shadertoy.fetchShaderList(function(shaderList){
+//            var newIds = shaderList.Results;
+//            for (var i = 0; i < newIds.length; ++i) {
+//                var shaderId = newIds[i];
+//                refreshAllList.push(shaderId);
+//            }
+//            fetchTimer.start();
+        })
     }
 
     function updateResults() {
@@ -143,10 +190,6 @@ Window {
     function processResults(json) {
         console.log("Results");
         clearCurrentResults();
-        //currentFlow = flowBuilder.createObject(flowContainer);
-        //        flowContainer.contentHeight = Qt.binding(function() { return currentFlow.height; });
-        //        flowContainer.contentWidth = Qt.binding(function() { return currentFlow.width; });
-
         var newIds = json.Results;
         for (var i = 0; i < newIds.length; ++i) {
             var shaderId = newIds[i];

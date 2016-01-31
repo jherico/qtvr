@@ -30,7 +30,7 @@ Rectangle {
         width: 256; height: 144
         anchors { top: parent.top; topMargin: 8; horizontalCenter: parent.horizontalCenter }
         fillMode: Image.PreserveAspectFit
-        source: "https://www.shadertoy.com/media/shaders/" + shaderId + ".jpg"
+        //source: "https://www.shadertoy.com/media/shaders/" + shaderId + ".jpg"
     }
 
     Item {

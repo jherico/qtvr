@@ -2,6 +2,10 @@ import QtQuick 2.5
 
 QtObject {
     id: shadertoy
+    objectName: "shadertoy"
+
+    signal receivedShaderList(string shaderList)
+    signal receivedShader(string shaderList)
 
     property var activeTextures: [ misc[0], misc[0], misc[0], misc[0] ]
 
@@ -102,7 +106,10 @@ QtObject {
     property string apiKey: "Nt8tw7"
 
     function fetchShaderList(callback) {
-        request("/shaders", {}, callback)
+        request("/shaders", {}, function(results) {
+            receivedShaderList(results);
+            callback(JSON.parse(results));
+        })
     }
 
     function fetchShader(shaderId, callback) {
@@ -114,6 +121,8 @@ QtObject {
 
         request("/shaders/" + shaderId, {}, function(shaderInfo) {
             console.log("Got network data for " + shaderId);
+            receivedShader(shaderInfo);
+            shaderInfo = JSON.parse(shaderInfo)
             shadersInfoCache[shaderId] = shaderInfo;
             callback(shaderInfo);
         })
@@ -130,7 +139,11 @@ QtObject {
     // Query shaders with filters: "vr", "soundoutput", "soundinput", "webcam", "multipass", "musicstream" (by default, there is no filter)
     // https://www.shadertoy.com/api/v1/shaders/query/string?filter=vr&key=appkey
     function searchShaders(query, params, callback) {
-        request("/shaders/query" + (query ? "/" + query : ""), callback ? params : {}, callback ? callback : params);
+
+        request("/shaders/query" + (query ? "/" + query : ""), callback ? params : {}, function(results) {
+            var shaderInfo = JSON.parse(results);
+            (callback ? callback : params)(shaderInfo);
+        });
     }
 
     readonly property string apiBaseUrl: "https://www.shadertoy.com/api/v1";
@@ -150,39 +163,10 @@ QtObject {
         var url = apiBaseUrl + path + "?" + queryString;
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-//                console.log(url)
-//                console.log(xhr.responseText)
-                callback(JSON.parse(xhr.responseText));
+                callback(xhr.responseText);
             }
         };
         xhr.open('GET', url, true);
         xhr.send('');
     }
 }
-
-/*
-
-
-where string is your search string such as tags, usernames, words...
-
-
-Get a shader from a shader ID.
-
-https://www.shadertoy.com/api/v1/shaders/shaderID?key=appkey
-
-where shaderID is the same ID used in the Shadertoy URLs, and also the values returned by the "Query Shaders".
-
-
-Access the assets.
-
-When you retrieve a shader you will see a key called "inputs", this can be a texture/video/keyboard/sound used by the shader. The JSON returned when accessing a shader will look like this:
-
-[..]{"inputs":[{"id":17,"src":"/presets/tex12.png","ctype":"texture","channel":0}[..]
-
-To access this specific asset you can just cut and paste this path https://www.shadertoy.com/presets/tex12.png
-
-
-Get all shaders.
-
-https://www.shadertoy.com/api/v1/shaders?key=appkey
-  */

@@ -19,16 +19,23 @@ QString getInterfaceQmlDir() {
     return getRelativeDir("/");
 }
 
+QObject* getChildByName(QQmlApplicationEngine& engine, const char* name) {
+    for (auto obj : engine.rootObjects()) {
+        auto child = obj->findChild<QObject*>(QString(name));
+        if (child) {
+            return child;
+        }
+    }
+    qWarning() << "Could not find object named " << name;
+    return nullptr;
+}
+
 
 void setChild(QQmlApplicationEngine& engine, const char* name) {
-  for (auto obj : engine.rootObjects()) {
-    auto child = obj->findChild<QObject*>(QString(name));
+    auto child = getChildByName(engine, name);
     if (child) {
-      engine.rootContext()->setContextProperty(name, child);
-      return;
+        engine.rootContext()->setContextProperty(name, name);
     }
-  }
-  qWarning() << "Could not find object named " << name;
 }
 
 void addImportPath(QQmlApplicationEngine& engine, const QString& relativePath) {
@@ -53,10 +60,47 @@ class MyQmlNetworkAccessManagerFactory : public QQmlNetworkAccessManagerFactory 
     QNetworkAccessManager* create(QObject*parent) override {
         return new MyNetworkAccessManager(parent);
     }
-
-
 };
 
+class Persister : public QObject {
+    Q_OBJECT
+public:
+    Persister(QObject* parent = nullptr) : QObject(parent) {}
+
+public slots:
+    void persistShaderList(QString shaderList) {
+        qDebug() << "Persist shader list";
+        QFile file("C:/Users/bdavis/Git/core/app/resources/shadertoys/shadertoys.json");
+        if (!file.open(QFile::Truncate | QFile::ReadWrite)) {
+            qWarning() << "Could not open output file";
+            return;
+        }
+        file.write(shaderList.toUtf8());
+        file.close();
+    }
+
+    void persistShader(QString shader) {
+        qDebug() << "Persist shader ";
+        auto shaderBytes = shader.toUtf8();
+        QJsonDocument document = QJsonDocument::fromJson(shaderBytes);
+        auto object = document.object();
+        object = object.value("Shader").toObject();
+        object = object.value("info").toObject();
+        auto id = object.value("id").toString();
+        if (id.isEmpty()) {
+            qWarning() << "Could not find shader ID";
+            return;
+        }
+        QFile file("C:/Users/bdavis/Git/core/app/resources/shadertoys/" + id + ".json");
+        if (!file.open(QFile::Truncate | QFile::ReadWrite)) {
+            qWarning() << "Could not open output file";
+            return;
+        }
+        file.write(shaderBytes);
+        file.close();
+    }
+
+};
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -67,6 +111,7 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setOverrideCursor(Qt::BlankCursor);
     QtWebEngine::initialize();
 
+
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("DebugQML", true);
     engine.setNetworkAccessManagerFactory(new MyQmlNetworkAccessManagerFactory());
@@ -76,5 +121,12 @@ int main(int argc, char *argv[]) {
     engine.load(QUrl(QStringLiteral("qml/Stubs.qml")));
     setChild(engine, "Renderer");
     setChild(engine, "offscreenFlags");
+
+    auto persister = new Persister();
+    auto shadertoy = getChildByName(engine, "shadertoy");
+    QObject::connect(shadertoy, SIGNAL(receivedShaderList(QString)), persister, SLOT(persistShaderList(QString)));
+    QObject::connect(shadertoy, SIGNAL(receivedShader(QString)), persister, SLOT(persistShader(QString)));
     return app.exec();
 }
+
+#include "main.moc"
