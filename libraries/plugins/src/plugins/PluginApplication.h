@@ -79,7 +79,7 @@ protected slots:
     void updateInputModes();
 
 protected:
-    virtual void updateOverlayTexture(uint32_t textureId) override;
+    virtual void updateOverlayTexture(uint32_t textureId, const glm::uvec2& size) override;
     virtual void cleanupBeforeQuit() override;
     virtual void initializeUI(const QUrl& desktopUrl) override;
     void update(float deltaTime);

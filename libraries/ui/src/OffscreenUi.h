@@ -37,6 +37,8 @@ public:
     void setNavigationFocused(bool focused);
     void unfocusWindows();
     void toggleMenu(const QPoint& screenCoordinates);
+    void setRootContextProperty(const QString& property, const QVariant& v);
+    void setRootContextProperty(const QString& property, QObject* o);
 
     QQuickItem* getDesktop();
     QQuickItem* getToolWindow();

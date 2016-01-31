@@ -221,7 +221,7 @@ void UiApplication::initializeUI(const QUrl& desktopUrl) {
 
 }
 
-void UiApplication::updateOverlayTexture(uint32_t textureId) {
+void UiApplication::updateOverlayTexture(uint32_t textureId, const glm::uvec2& _size) {
     if (_uiTexture) {
         _offscreenUi->releaseTexture(_uiTexture);
         _uiTexture = 0;

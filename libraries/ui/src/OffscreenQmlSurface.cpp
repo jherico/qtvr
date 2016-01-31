@@ -241,12 +241,12 @@ private:
         {
             PROFILE_RANGE("qml_render")
             TexturePtr texture = _textures.getNextTexture();
-            static auto lastTextureCount = _textures._allTextures.size();
-            auto textureCount = _textures._allTextures.size();;
-            if (textureCount != lastTextureCount) {
-                lastTextureCount = textureCount;
-                qDebug() << "Now consuming " << textureCount << " textures";
-            }
+            //static auto lastTextureCount = _textures._allTextures.size();
+            //auto textureCount = _textures._allTextures.size();;
+            //if (textureCount != lastTextureCount) {
+            //    lastTextureCount = textureCount;
+            //    qDebug() << "Now consuming " << textureCount << " textures";
+            //}
             _fbo->Bind(Framebuffer::Target::Draw);
             _fbo->AttachTexture(Framebuffer::Target::Draw, FramebufferAttachment::Color, *texture, 0);
             _fbo->Complete(Framebuffer::Target::Draw);
@@ -510,7 +510,7 @@ void OffscreenQmlSurface::updateQuick() {
             // Set to 1 to represent my own lock that I will release in the above block
             _textureLocks[_currentTexture] = 1;
         }
-        emit textureUpdated(_currentTexture);
+        emit textureUpdated(_currentTexture, _renderer->_size);
     }
 }
 

@@ -3,10 +3,16 @@ import QtQuick 2.5
 import "../desktop"
 import "."
 import "../controls"
+import "../windows"
 
 Desktop {
     id: desktop
     rootMenu: AppMenu { }
+    property var editor;
+
+    Shadertoy {
+        id: shadertoy
+    }
 
     MouseArea {
         z: 10000
@@ -17,7 +23,7 @@ Desktop {
         onClicked: desktop.toggleMenu(Qt.vector2d(mouseX, mouseY));
         property real lastX
         property real lastY
-        onMouseXChanged: cursor.x = mouseX
+        onMouseXChanged: cursor.x = mouseX;
         onMouseYChanged: cursor.y = mouseY
     }
 
@@ -25,16 +31,15 @@ Desktop {
         z: 10000
         id: cursor
         text: "\uf245"
-        size: 32
+        size: 24
+        FontAwesome {
+            text: "\uf245"
+            color: "white"
+            size: parent.size * 0.8
+            x: parent.size * 0.1
+            y: parent.size * 0.1
+        }
 
-    }
-
-    Rectangle {
-        id: focusDebugger;
-        z: 9999; visible: true; color: "red"
-        width: 100
-        height: 100
-        ColorAnimation on color { from: "#7fffff00"; to: "#7f0000ff"; duration: 1000; loops: 9999 }
     }
 
     function setDisplayPlugins(plugins) {
@@ -68,6 +73,15 @@ Desktop {
         return result;
     }
 
+    Component { id: editorBuilder; Editor { } }
+    function toggleEditor() {
+        if (!editor) {
+            editor = editorBuilder.createObject(desktop);
+            editor.visible = true;
+        } else {
+            editor.visible = !editor.visible;
+        }
+    }
 
     function findMenu(items, targetName) {
         for (var i = 0; i < items.length; ++i) {

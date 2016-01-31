@@ -9,12 +9,14 @@
 #include <Platform.h>
 #include <plugins/DisplayPlugin.h>
 #include <gl/OglplusHelpers.h>
+#include <OffscreenUi.h>
 
 
 Application::Application(int& argc, char** argv) : PluginApplication(QUrl::fromLocalFile("shadertoy/AppDesktop.qml"), argc, argv) {
-    getWindow()->setGeometry(100, -980, 800, 600);
+    getWindow()->setGeometry(100, -980, 1280, 720);
     Q_INIT_RESOURCE(ShadertoyVR);
     _renderer.setup();
+    getOffscreenUi()->setRootContextProperty("Renderer", &_renderer);
 }
 
 void Application::cleanupBeforeQuit() {

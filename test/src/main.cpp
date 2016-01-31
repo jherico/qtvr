@@ -3,8 +3,6 @@
 #include <QtWebEngine>
 #include <QFileSystemModel>
 
-#include "../../app/src/GlslEditor.h"
-
 QString getRelativeDir(const QString& relativePath = ".") {
     QDir path(__FILE__); path.cdUp();
     auto result = path.absoluteFilePath(relativePath);
@@ -53,14 +51,8 @@ int main(int argc, char *argv[]) {
     addImportPath(engine, "../qml");
     addImportPath(engine, "../../../app/resources/qml");
     engine.load(QUrl(QStringLiteral("qml/main.qml")));
-    for (auto item : engine.rootObjects()) {
-        auto editor = item->findChild<QQuickItem*>("glslEditor");
-        if (editor) {
-            auto textDoc = editor->property("textDocument").value<QQuickTextDocument*>()->textDocument();
-            auto highlighter = new GlslHighlighter(true, textDoc);
-            highlighter->setDocument(textDoc);
-        }
-    }
-    setChild(engine, "rootMenu");
+    engine.load(QUrl(QStringLiteral("qml/Stubs.qml")));
+    setChild(engine, "Renderer");
+    setChild(engine, "offscreenFlags");
     return app.exec();
 }

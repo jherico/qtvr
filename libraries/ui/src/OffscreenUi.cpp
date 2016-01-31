@@ -396,5 +396,12 @@ void OffscreenUi::toggleMenu(const QPoint& screenPosition) {
     QMetaObject::invokeMethod(_desktop, "toggleMenu",  Q_ARG(QVariant, virtualPos));
 }
 
+void OffscreenUi::setRootContextProperty(const QString& property, const QVariant& v) {
+    getRootContext()->setContextProperty(property, v);
+}
+
+void OffscreenUi::setRootContextProperty(const QString& property, QObject* o) {
+    getRootContext()->setContextProperty(property, o);
+}
 
 #include "OffscreenUi.moc"

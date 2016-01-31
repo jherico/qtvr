@@ -29,6 +29,8 @@ namespace shadertoy {
 
     class Renderer : public QObject {
         Q_OBJECT
+        Q_PROPERTY(QString currentShader READ currentShader WRITE setCurrentShader NOTIFY currentShaderChanged)
+        Q_PROPERTY(QString validShader READ validShader NOTIFY validShaderChanged)
 
         struct Channel {
             oglplus::Texture::Target target;
@@ -41,6 +43,14 @@ namespace shadertoy {
             uvec2 size;
         };
 
+    public:
+    signals:
+        void compileError(const QString & source);
+        void compileSuccess();
+        void currentShaderChanged();
+        void validShaderChanged();
+
+            
     public:
         void setup();
         void render();
@@ -65,16 +75,20 @@ namespace shadertoy {
             return texturePath;
         }
 
-        virtual bool setShaderSourceInternal(const QString& source);
+        const QString& currentShader() const { return _currentShader; }
+        void setCurrentShader(const QString& shader);
+        
+        const QString& validShader() const { return _validShader; }
+
+        virtual bool tryToBuild();
         virtual TextureData loadTexture(const QString& source);
         virtual void setChannelTextureInternal(int channel, shadertoy::ChannelInputType type, const QString & textureSource);
         virtual void setShaderInternal(const shadertoy::Shader & shader);
 
-    signals:
-        void compileError(const QString & source);
-        void compileSuccess();
-
     protected:
+        QString _currentShader;
+        QString _validShader;
+
         void initTextureCache();
 
         typedef std::map<QString, TextureData> TextureMap;

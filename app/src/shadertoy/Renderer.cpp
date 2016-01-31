@@ -33,8 +33,7 @@ void Renderer::setup() {
     Q_ASSERT(QOpenGLContext::currentContext());
 
     initTextureCache();
-
-    setShaderSourceInternal(FileUtils::readFileToString(":/shadertoys/default.fs"));
+    setCurrentShader(FileUtils::readFileToString(":/shadertoys/default.fs"));
     assert(shadertoyProgram);
     skybox = loadSkybox(shadertoyProgram);
     Platform::addShutdownHook([&] {
@@ -175,8 +174,21 @@ void Renderer::updateUniforms() {
     }
 }
 
-bool Renderer::setShaderSourceInternal(const QString& originalSource) {
-    QString source = originalSource;
+//void mainImage( out vec4 fragColor, in vec2 fragCoord );
+const char * FOOTER_2D = R"SHADER(
+void main() {
+    mainImage(FragColor, gl_FragCoord.xy);
+}
+)SHADER";
+
+//void mainVR( out vec4 fragColor, in vec2 fragCoord, in vec3 fragRayOri, in vec3 fragRayDir );
+const char * FOOTER_VR = R"SHADER(
+void main() {
+    mainVR(FragColor, gl_FragCoord.xy, vec3(0.0, 0.0, 0.0), iDir);
+}
+)SHADER";
+
+bool Renderer::tryToBuild() {
     try {
         position = vec3();
         if (!vertexShader) {
@@ -193,14 +205,17 @@ bool Renderer::setShaderSourceInternal(const QString& originalSource) {
                 channel.target == Texture::Target::CubeMap ? "Cube" : "2D", i);
             header += line;
         }
+        
         header += shadertoy::LINE_NUMBER_HEADER;
         FragmentShaderPtr newFragmentShader(new FragmentShader());
+        QString source = _currentShader;
         source.
             replace(QRegExp("\\t"), "  ").
             replace(QRegExp("\\bgl_FragColor\\b"), "FragColor").
             replace(QRegExp("\\btexture2D\\b"), "texture").
             replace(QRegExp("\\btextureCube\\b"), "texture");
         source.insert(0, header);
+        source += FOOTER_2D;
         QByteArray qb = source.toLocal8Bit();
         GLchar * fragmentSource = (GLchar*)qb.data();
         StrCRef src(fragmentSource);
@@ -218,8 +233,11 @@ bool Renderer::setShaderSourceInternal(const QString& originalSource) {
         fragmentShader.swap(newFragmentShader);
         updateUniforms();
         startTime = secTimestampNow();
+        _validShader = _currentShader;
+        emit validShaderChanged();
         emit compileSuccess();
     } catch (ProgramBuildError & err) {
+        qWarning() << err.Log().c_str();
         emit compileError(QString(err.Log().c_str()));
         return false;
     }
@@ -286,5 +304,13 @@ void Renderer::setShaderInternal(const shadertoy::Shader & shader) {
     for (int i = 0; i < shadertoy::MAX_CHANNELS; ++i) {
         setChannelTextureInternal(i, shader.channelTypes[i], shader.channelTextures[i]);
     }
-    setShaderSourceInternal(shader.fragmentSource);
+    setCurrentShader(shader.fragmentSource);
+}
+
+void Renderer::setCurrentShader(const QString& shader) {
+    if (shader != _currentShader) {
+        _currentShader = shader;
+        emit currentShaderChanged();
+        tryToBuild();
+    }
 }

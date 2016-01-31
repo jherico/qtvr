@@ -1,7 +1,7 @@
 import QtQuick 2.4
 import QtQuick.Controls 1.3
 
-MenuBar {
+Menu {
     id: root
     objectName: "rootMenu"
     Menu {
@@ -42,6 +42,16 @@ MenuBar {
                 text: "Do Nothing"
                 onTriggered: console.log("Nothing")
             }
+        }
+    }
+
+    MenuItem {
+        id: editorItem
+        action:     Action {
+            id: editorAction
+            text: "Toggle Editor"
+            shortcut: "`"
+            onTriggered: desktop.toggleEditor()
         }
     }
 

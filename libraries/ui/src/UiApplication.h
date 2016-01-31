@@ -24,7 +24,7 @@ public:
     const OffscreenUi* getOffscreenUi() const { return _offscreenUi; }
 
 protected slots:
-    virtual void updateOverlayTexture(uint32_t textureId);
+    virtual void updateOverlayTexture(uint32_t textureId, const glm::uvec2& _size);
 
 protected:
     virtual void cleanupBeforeQuit() override;

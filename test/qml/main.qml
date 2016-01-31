@@ -11,21 +11,23 @@ import "../../app/resources/qml/shadertoy"
 ApplicationWindow {
     id: offscreenWindow
     visible: true
-    width: 1920
-    height: 1080
+    width: 1280
+    height: 720
     title: qsTr("Scratch App")
     menuBar: desktop.rootMenu
+
+    Settings {
+        category: "MainTestWindow"
+        property alias width: offscreenWindow.width
+        property alias height: offscreenWindow.height
+        property alias x: offscreenWindow.x
+        property alias y: offscreenWindow.y
+    }
 
     Component { id: listModelBuilder; ListModel{} }
 
     AppDesktop {
         id: desktop
         anchors.fill: parent
-
-        Editor {
-
-        }
-
-
     }
 }

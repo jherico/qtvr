@@ -104,12 +104,6 @@ void GLApplication::internalPaintGL() {
 
     _frameCount++;
 
-    static auto startTime = secTimestampNow();
-    if ((_frameCount % 500) == 0) {
-        auto interval = (float)(startTime - secTimestampNow());
-        auto fps = ((float)_frameCount / interval);
-        qDebug() << "FPS " << fps;
-    }
     PROFILE_RANGE(__FUNCTION__);
     resizeGL();
     prePaintGL();

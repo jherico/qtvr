@@ -86,6 +86,7 @@ protected:
 
     GLTextureEscrow _sceneTextureEscrow;
 
+    glm::uvec2 _overlaySize;
     bool _vsyncSupported { false };
 
 private:

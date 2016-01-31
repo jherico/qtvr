@@ -391,11 +391,11 @@ void PluginApplication::setFullscreen(QScreen* screen) {
 void PluginApplication::unsetFullscreen() {
 }
 
-void PluginApplication::updateOverlayTexture(uint32_t textureId) {
-    UiApplication::updateOverlayTexture(textureId);
+void PluginApplication::updateOverlayTexture(uint32_t textureId, const glm::uvec2& size) {
+    UiApplication::updateOverlayTexture(textureId, size);
     auto displayPlugin = getActiveDisplayPlugin();
     if (displayPlugin) {
-        displayPlugin->submitOverlayTexture(textureId, uvec2());
+        displayPlugin->submitOverlayTexture(textureId, size);
     }
 }
 

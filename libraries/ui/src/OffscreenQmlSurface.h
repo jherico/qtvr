@@ -76,7 +76,7 @@ public:
     void releaseTexture(uint32_t texture);
 
 signals:
-    void textureUpdated(unsigned int texture);
+    void textureUpdated(unsigned int texture, const glm::uvec2& size);
 
 private:
     QObject* finishQmlLoad(std::function<void(QQmlContext*, QObject*)> f);

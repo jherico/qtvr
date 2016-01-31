@@ -179,10 +179,6 @@ OpenGLDisplayPlugin::OpenGLDisplayPlugin() {
         qApp->releaseSceneTexture(texture);
     });
 
-    //_overlayTextureEscrow.setRecycler([this](GLuint texture) {
-    //    qApp->releaseOverlayTexture(texture);
-    //});
-
     connect(&_timer, &QTimer::timeout, this, [&] {
 #ifdef Q_OS_MAC
         // On Mac, QT thread timing is such that we can miss one or even two cycles quite often, giving a render rate (including update/simulate)
@@ -337,9 +333,10 @@ void OpenGLDisplayPlugin::submitSceneTexture(uint32_t frameIndex, uint32_t scene
 #endif
 }
 
-void OpenGLDisplayPlugin::submitOverlayTexture(GLuint overlayTexture, const glm::uvec2& sceneSize) {
+void OpenGLDisplayPlugin::submitOverlayTexture(GLuint overlayTexture, const glm::uvec2& overlaySize) {
     // Submit it to the presentation thread via escrow
     _currentOverlayTexture = overlayTexture;
+    _overlaySize = overlaySize;
 }
 
 void OpenGLDisplayPlugin::updateTextures() {
@@ -366,10 +363,14 @@ void OpenGLDisplayPlugin::internalPresent() {
     Context::Clear().DepthBuffer();
     glBindTexture(GL_TEXTURE_2D, _currentSceneTexture);
     drawUnitQuad();
-    if (_currentOverlayTexture) {
+    if (_currentOverlayTexture && size == _overlaySize) {
         glBindTexture(GL_TEXTURE_2D, _currentOverlayTexture);
         Context::Enable(Capability::Blend);
-        drawUnitQuad();
+        try {
+            drawUnitQuad();
+        } catch (const Error& error) {
+            qWarning() << error.what();
+        }
         Context::Disable(Capability::Blend);
     }
     glBindTexture(GL_TEXTURE_2D, 0);
