@@ -9,6 +9,7 @@ Desktop {
     id: desktop
     rootMenu: AppMenu { }
     property var editor;
+    property var browser;
 
     Shadertoy {
         id: shadertoy
@@ -35,9 +36,9 @@ Desktop {
         FontAwesome {
             text: "\uf245"
             color: "white"
-            size: parent.size * 0.8
-            x: parent.size * 0.1
-            y: parent.size * 0.1
+            size: parent.size * 0.7
+            x: 2
+            y: 4
         }
 
     }
@@ -80,6 +81,16 @@ Desktop {
             editor.visible = true;
         } else {
             editor.visible = !editor.visible;
+        }
+    }
+
+    Component { id: browserBuilder; Browser { } }
+    function toggleBrowser() {
+        if (!browser) {
+            browser = browserBuilder.createObject(desktop);
+            browser.visible = true;
+        } else {
+            browser.visible = !browser.visible;
         }
     }
 

@@ -47,11 +47,19 @@ Menu {
 
     MenuItem {
         id: editorItem
-        action:     Action {
+        action: Action {
             id: editorAction
             text: "Toggle Editor"
             shortcut: "`"
             onTriggered: desktop.toggleEditor()
+        }
+    }
+
+    MenuItem {
+        id: browserItem
+        action: Action {
+            text: "Browser"
+            onTriggered: desktop.toggleBrowser()
         }
     }
 

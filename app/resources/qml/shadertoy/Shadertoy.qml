@@ -86,5 +86,103 @@ QtObject {
         { name: "Music", textures: music },
     ]
 
+    property var shadersInfoCache: {
+        "ZZZZZZ": {}
+    }
+
+    readonly property var sortFields: [
+        "popular", "name", "love", "newest", "hot"
+    ]
+
+    readonly property var filterFields: [
+        "none", "vr", "soundoutput", "soundinput", "webcam", "multipass", "musicstream"
+    ]
+
+    // API docs: https://www.shadertoy.com/api
+    property string apiKey: "Nt8tw7"
+
+    function fetchShaderList(callback) {
+        request("/shaders", {}, callback)
+    }
+
+    function fetchShader(shaderId, callback) {
+        if (shadersInfoCache[shaderId]) {
+            console.log("Got cached data for " + shaderId);
+            callback(shadersInfoCache[shaderId]);
+            return;
+        }
+
+        request("/shaders/" + shaderId, {}, function(shaderInfo) {
+            console.log("Got network data for " + shaderId);
+            shadersInfoCache[shaderId] = shaderInfo;
+            callback(shaderInfo);
+        })
+    }
+
+    // Sort
+    // Query shaders sorted by "name", "love", "popular", "newest", "hot" (by default, it uses "popular").
+    // https://www.shadertoy.com/api/v1/shaders/query/string?sort=newest&key=appkey
+
+    // Pagination
+    // https://www.shadertoy.com/api/v1/shaders/query/string?from=5&num=25&key=appkey
+
+    // Filter
+    // Query shaders with filters: "vr", "soundoutput", "soundinput", "webcam", "multipass", "musicstream" (by default, there is no filter)
+    // https://www.shadertoy.com/api/v1/shaders/query/string?filter=vr&key=appkey
+    function searchShaders(query, params, callback) {
+        request("/shaders/query" + (query ? "/" + query : ""), callback ? params : {}, callback ? callback : params);
+    }
+
+    readonly property string apiBaseUrl: "https://www.shadertoy.com/api/v1";
+
+    function request(path, params, callback) {
+        var xhr = new XMLHttpRequest();
+        var queryString = "key=" + apiKey;
+        var queryParamNames = Object.keys(params);
+        for (var i = 0; i < queryParamNames.length; ++i) {
+            var name = queryParamNames[i];
+            if (name === "filter" && params[name] === "none") {
+                continue;
+            }
+            queryString += "&" + name + "=" + params[name];
+        }
+
+        var url = apiBaseUrl + path + "?" + queryString;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+//                console.log(url)
+//                console.log(xhr.responseText)
+                callback(JSON.parse(xhr.responseText));
+            }
+        };
+        xhr.open('GET', url, true);
+        xhr.send('');
+    }
 }
 
+/*
+
+
+where string is your search string such as tags, usernames, words...
+
+
+Get a shader from a shader ID.
+
+https://www.shadertoy.com/api/v1/shaders/shaderID?key=appkey
+
+where shaderID is the same ID used in the Shadertoy URLs, and also the values returned by the "Query Shaders".
+
+
+Access the assets.
+
+When you retrieve a shader you will see a key called "inputs", this can be a texture/video/keyboard/sound used by the shader. The JSON returned when accessing a shader will look like this:
+
+[..]{"inputs":[{"id":17,"src":"/presets/tex12.png","ctype":"texture","channel":0}[..]
+
+To access this specific asset you can just cut and paste this path https://www.shadertoy.com/presets/tex12.png
+
+
+Get all shaders.
+
+https://www.shadertoy.com/api/v1/shaders?key=appkey
+  */
