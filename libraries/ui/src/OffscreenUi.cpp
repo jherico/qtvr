@@ -404,4 +404,14 @@ void OffscreenUi::setRootContextProperty(const QString& property, QObject* o) {
     getRootContext()->setContextProperty(property, o);
 }
 
+bool OffscreenUi::eventFilter(QObject* originalDestination, QEvent* event) {
+    auto result = OffscreenQmlSurface::eventFilter(originalDestination, event);
+    if (event->type() == QEvent::MouseMove) {
+        QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+        QPointF transformedPos = mapToVirtualScreen(mouseEvent->localPos(), getWindow());
+        _desktop->setProperty("cursorPosition", QVector2D(transformedPos.x(), transformedPos.y()));
+    }
+    return result;
+}
+
 #include "OffscreenUi.moc"

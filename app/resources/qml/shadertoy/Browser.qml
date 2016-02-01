@@ -49,8 +49,6 @@ Window {
         property alias query: root.query
     }
 
-    property var currentResults: [];
-
     Rectangle {
         anchors.fill: parent;
         color: "white"
@@ -102,65 +100,49 @@ Window {
                     model: [ "5", "25", "50", "100" ]
                     currentIndex: 1
                 }
-
-                Button { text: "Fetch All";  onClicked: refreshAll(); }
             }
 
             ScrollView {
                 clip: true;
                 anchors { top: searchField.bottom; topMargin: 8; bottom: parent.bottom; left: parent.left; right: parent.right }
                 id: flowContainer
-                Flow { id: grid; spacing: 4; width: flowContainer.width * 0.95; }
+
+
+                Column {
+                    id: flow;
+                    spacing: 4;
+                    width: flowContainer.width * 0.98;
+                    Component {
+                        id: shaderPreviewBuilder;
+                        ShaderPreview {
+                            anchors { left: parent.left; right: parent.right }
+                            MouseArea {
+                                anchors.fill: parent;
+                                onDoubleClicked: desktop.loadShader(shaderId);
+                            }
+                        }
+                    }
+                    property var shaderChildren: [];
+
+                    function setShaders(shaderIds) {
+                        clearShaders();
+                        for (var i = 0; i < shaderIds.length; ++i) {
+                            shaderChildren.push(shaderPreviewBuilder.createObject(flow, { shaderId: shaderIds[i] }));
+                        }
+
+                    }
+
+                    function clearShaders() {
+                        while (shaderChildren.length) {
+                            var item = shaderChildren[0];
+                            shaderChildren.shift();
+                            item.parent = null;
+                            item.destroy();
+                        }
+                    }
+                }
             }
         }
-
-        Component { id: shaderPreviewBuilder; ShaderPreview {} }
-        //Component { id: flowBuilder;  }
-
-        Timer {
-            id: fetchTimer;
-            running: false
-            repeat: true
-            interval: 500
-            onTriggered: fetchSomeShaders();
-        }
-    }
-
-    property var refreshAllList: [];
-
-    function fetchSomeShaders() {
-        if (refreshAllList.length === 0) {
-            console.log("Fetching done");
-            fetchTimer.stop();
-            return;
-        }
-
-        for (var i = 0; i < 10; ++i) {
-            if (refreshAllList.length) {
-                fetchSingleShader(refreshAllList[0]);
-                console.log(refreshAllList[0]);
-                refreshAllList.shift();
-            }
-        }
-        console.log(refreshAllList.length + " items remaining");
-    }
-
-    function fetchSingleShader(shaderId) {
-        console.log("Requesting item " + shaderId);
-        shadertoy.fetchShader(shaderId, function(newShaderData){
-            console.log("Persisted shader " + shaderId);
-        });
-    }
-
-    function refreshAll() {
-        shadertoy.fetchShaderList(function(shaderList){
-//            var newIds = shaderList.Results;
-//            for (var i = 0; i < newIds.length; ++i) {
-//                var shaderId = newIds[i];
-//                refreshAllList.push(shaderId);
-//            }
-//            fetchTimer.start();
-        })
     }
 
     function updateResults() {
@@ -168,33 +150,17 @@ Window {
             return;
         }
 
-        clearCurrentResults();
+        console.log("Attempting to update results")
+        flow.clearShaders();
         var params = {};
         params["sort"] = sort;
         params["num"] = count;
         if (filter) { params["filter"] = filter }
-        shadertoy.searchShaders(query, params, processResults);
+        shadertoy.api.queryShaders(query, params, processResults);
         console.log("Update results");
     }
 
-    function clearCurrentResults() {
-        grid.children = [];
-        while (currentResults.length) {
-            var item = currentResults[0];
-            item.parent = null;
-            item.destroy();
-            currentResults.pop();
-        }
-    }
-
-    function processResults(json) {
-        console.log("Results");
-        clearCurrentResults();
-        var newIds = json.Results;
-        for (var i = 0; i < newIds.length; ++i) {
-            var shaderId = newIds[i];
-            var newPreview = shaderPreviewBuilder.createObject(grid, { shaderId: shaderId });
-            currentResults.push(newPreview);
-        }
+    function processResults(shaderIds) {
+        flow.setShaders(shaderIds);
     }
 }

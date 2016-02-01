@@ -1,7 +1,8 @@
 TEMPLATE = app
 QT += gui qml quick xml webengine widgets
 CONFIG += c++11
-SOURCES += src/main.cpp
+SOURCES += src/main.cpp \
+    ../app/src/shadertoy/Cache.cpp
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -21,5 +22,8 @@ DISTFILES += \
     ../app/resources/qml/shadertoy/*.* \
     ../app/resources/presets/*.* \
     ../app/resources/previz/*.*
+
+HEADERS += \
+    ../app/src/shadertoy/Cache.h
 
 

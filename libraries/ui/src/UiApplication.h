@@ -17,7 +17,7 @@ class UiApplication : public GLApplication {
     Q_OBJECT
     
 public:
-    UiApplication(const QUrl& desktopUrl, int& argc, char** argv);
+    UiApplication(int& argc, char** argv);
     virtual ~UiApplication();
 
     OffscreenUi* getOffscreenUi() { return _offscreenUi; }

@@ -69,7 +69,7 @@ public:
     QQmlContext* getRootContext();
 
     QPointF mapToVirtualScreen(const QPointF& originalPoint, QWindow* source) const;
-    virtual bool eventFilter(QObject* originalDestination, QEvent* event);
+    virtual bool eventFilter(QObject* originalDestination, QEvent* event) override;
 
     uint32_t getTexture() const;
     void lockTexture(uint32_t texture);

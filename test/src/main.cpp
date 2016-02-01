@@ -4,6 +4,8 @@
 #include <QFileSystemModel>
 #include <QQmlNetworkAccessManagerFactory>
 
+#include "../../app/src/shadertoy/Cache.h"
+
 QString getRelativeDir(const QString& relativePath = ".") {
     QDir path(__FILE__); path.cdUp();
     auto result = path.absoluteFilePath(relativePath);
@@ -17,6 +19,10 @@ QString getTestQmlDir() {
 
 QString getInterfaceQmlDir() {
     return getRelativeDir("/");
+}
+
+QString getResourceDirectory() {
+    return getRelativeDir("../../app/resources/");
 }
 
 QObject* getChildByName(QQmlApplicationEngine& engine, const char* name) {
@@ -114,6 +120,7 @@ int main(int argc, char *argv[]) {
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("DebugQML", true);
+    engine.rootContext()->setContextProperty("shadertoyOfflineAPI", new Cache(getResourceDirectory() + "/shadertoys/"));
     engine.setNetworkAccessManagerFactory(new MyQmlNetworkAccessManagerFactory());
     addImportPath(engine, "../qml");
     addImportPath(engine, "../../../app/resources/qml");

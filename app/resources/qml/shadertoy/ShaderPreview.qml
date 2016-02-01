@@ -5,62 +5,57 @@ import "."
 
 Rectangle {
     id: root
-    width: 256 + 16
-    height: 256
+    width: 640
+    height: image.y + image.height + 12
 
     color: "white"
     border { width: 2; color: "black";  }
     radius: 4
 
     property var shaderId;
-    property var shaderData;
+    property var shaderInfo;
 
-    Component.onCompleted: {
-        shadertoy.fetchShader(shaderId, function(newShaderData){
-            if (!shaderId) {
-                return;
-            }
-            root.shaderData = newShaderData;
+    Timer {
+        id: refreshTimer
+        interval: Math.random() * 100 + 50;
+        repeat: false
+        running: false
+        onTriggered: shadertoy.api.fetchShaderInfo(shaderId, function(result){
+            if (!root || !shaderId) { return; }
+            shaderInfo = result;
         });
+    }
+
+    Component.onCompleted: refreshTimer.start()
+
+
+    Text {
+        id: label
+        anchors { left: parent.left; top: parent.top; margins: 4; leftMargin: 8}
+        font.pointSize: 12
+        font.bold: true
+        text: shaderInfo ? shaderInfo.name : shaderId
     }
 
     Image {
         id: image
-        visible: root.shaderData ? true : false
-        width: 256; height: 144
-        anchors { top: parent.top; topMargin: 8; horizontalCenter: parent.horizontalCenter }
+        visible: shaderInfo ? true : false
+        anchors { left: parent.left; top: label.bottom; margins: 8 }
+        width: 256; height: width / 16 * 9
         fillMode: Image.PreserveAspectFit
         //source: "https://www.shadertoy.com/media/shaders/" + shaderId + ".jpg"
+        source: "../../shadertoys/" + shaderId + ".jpg"
     }
 
-    Item {
-        anchors { top: image.bottom; bottom: parent.bottom; left: parent.left; right: parent.right; margins: 8; topMargin: 4 }
-        BusyIndicator {
-            anchors.centerIn: parent
-            visible: shaderData ? false : true
-        }
 
-        Item {
-            anchors.fill: parent
-            visible: shaderData ? true : false
-
-            Column {
-                id: labelsColumn
-                width: 48
-                spacing: 2
-                Text { text: "Name" }
-                Text { text: "Author" }
-            }
-            Column {
-                anchors { left: labelsColumn.right; right: parent.right; margins: 4 }
-                spacing: 2
-                Text { text: root.shaderData ? root.shaderData.Shader.info.name : "" }
-                Text { text: root.shaderData ? root.shaderData.Shader.info.username : "" }
-                TextArea {
-                    anchors { left: parent.left; right: parent.right; }
-                    height: 64; readOnly: true;  text: root.shaderData ? root.shaderData.Shader.info.description : ""
-                }
-            }
-        }
+    ShaderInfo {
+        id: shaderInfoBox
+        shaderInfo: root.shaderInfo
+        visible: root.shaderInfo ? true : false;
+        anchors { top: image.top; bottom: image.bottom; left: image.right; leftMargin: 4; right: parent.right; rightMargin: 8 }
+    }
+    BusyIndicator {
+        anchors.centerIn: shaderInfoBox
+        visible: shaderInfo ? false : true
     }
 }

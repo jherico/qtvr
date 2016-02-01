@@ -44,15 +44,13 @@ Q_DECLARE_LOGGING_CATEGORY(interfaceapp_timing)
 OffscreenGLCanvas* _chromiumShareContext { nullptr };
 Q_GUI_EXPORT void qt_gl_set_global_share_context(QOpenGLContext *context);
 
-UiApplication::UiApplication(const QUrl& desktopUrl, int& argc, char** argv)
+UiApplication::UiApplication(int& argc, char** argv)
     : GLApplication(argc, argv) {
 
     _chromiumShareContext = new OffscreenGLCanvas();
     _chromiumShareContext->create(getWindow()->context()->getContext());
     _chromiumShareContext->makeCurrent();
     qt_gl_set_global_share_context(_chromiumShareContext->getContext());
-
-    initializeUI(desktopUrl);
 
     // Setup the userInputMapper with the actions
     auto userInputMapper = DependencyManager::set<UserInputMapper>();

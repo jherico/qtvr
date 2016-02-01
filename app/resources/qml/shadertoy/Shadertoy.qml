@@ -1,5 +1,7 @@
 import QtQuick 2.5
 
+import "."
+
 QtObject {
     id: shadertoy
     objectName: "shadertoy"
@@ -8,7 +10,7 @@ QtObject {
     signal receivedShader(string shaderList)
 
     property var activeTextures: [ misc[0], misc[0], misc[0], misc[0] ]
-
+    property var api: ShadertoyAPI {}
 
     readonly property var textures: [
         {
@@ -90,17 +92,9 @@ QtObject {
         { name: "Music", textures: music },
     ]
 
-    property var shadersInfoCache: {
-        "ZZZZZZ": {}
-    }
+    readonly property var sortFields: [ "popular", "name", "love", "newest", "hot" ]
 
-    readonly property var sortFields: [
-        "popular", "name", "love", "newest", "hot"
-    ]
-
-    readonly property var filterFields: [
-        "none", "vr", "soundoutput", "soundinput", "webcam", "multipass", "musicstream"
-    ]
+    readonly property var filterFields: [ "none", "vr", "soundoutput", "soundinput", "webcam", "multipass", "musicstream" ]
 
     // API docs: https://www.shadertoy.com/api
     property string apiKey: "Nt8tw7"

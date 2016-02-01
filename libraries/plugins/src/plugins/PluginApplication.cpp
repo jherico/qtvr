@@ -62,8 +62,8 @@
 #include <UUID.h>
 #include <OffscreenUi.h>
 
-PluginApplication::PluginApplication(const QUrl& desktopUrl, int& argc, char** argv)
-    : UiApplication(desktopUrl, argc, argv) {
+PluginApplication::PluginApplication(int& argc, char** argv)
+    : UiApplication(argc, argv) {
 
     DependencyManager::set<UserInputMapper>();
 
@@ -97,7 +97,6 @@ void PluginApplication::initializeGL() {
     _offscreenContext = new OffscreenGLCanvas();
     _offscreenContext->create(getWindow()->context()->getContext());
     _offscreenContext->makeCurrent();
-    getActiveDisplayPlugin()->idle();
 }
 
 void PluginApplication::resizeGL() {

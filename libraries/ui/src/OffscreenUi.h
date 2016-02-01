@@ -39,6 +39,7 @@ public:
     void toggleMenu(const QPoint& screenCoordinates);
     void setRootContextProperty(const QString& property, const QVariant& v);
     void setRootContextProperty(const QString& property, QObject* o);
+    virtual bool eventFilter(QObject* originalDestination, QEvent* event) override;
 
     QQuickItem* getDesktop();
     QQuickItem* getToolWindow();

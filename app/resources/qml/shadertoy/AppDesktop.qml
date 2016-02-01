@@ -10,10 +10,17 @@ Desktop {
     rootMenu: AppMenu { }
     property var editor;
     property var browser;
+    property var cursorPosition;
+    property var shadertoyCache;
 
-    Shadertoy {
-        id: shadertoy
+    onCursorPositionChanged: {
+        cursor.x = cursorPosition.x;
+        cursor.y = cursorPosition.y;
     }
+
+    signal loadShader(string shaderId);
+
+    Shadertoy { id: shadertoy }
 
     MouseArea {
         z: 10000
@@ -22,10 +29,8 @@ Desktop {
         hoverEnabled: true
         acceptedButtons: Qt.RightButton
         onClicked: desktop.toggleMenu(Qt.vector2d(mouseX, mouseY));
-        property real lastX
-        property real lastY
-        onMouseXChanged: cursor.x = mouseX;
-        onMouseYChanged: cursor.y = mouseY
+//        onMouseXChanged: cursor.x = mouseX;
+//        onMouseYChanged: cursor.y = mouseY
     }
 
     FontAwesome {
@@ -101,4 +106,6 @@ Desktop {
             }
         }
     }
+
+
 }

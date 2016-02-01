@@ -39,7 +39,7 @@ class PluginApplication : public UiApplication  {
     Q_OBJECT
     
 public:
-    PluginApplication(const QUrl& desktopUrl, int& argc, char** argv);
+    PluginApplication(int& argc, char** argv);
     virtual ~PluginApplication();
 
     virtual void initializeGL() override;
