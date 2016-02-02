@@ -18,28 +18,38 @@ limitations under the License.
 ************************************************************************************/
 
 #pragma once
+#include <QtCore/QObject>
 
-#include <QtCore/QStringList>
+#include <gl/OglplusHelpers.h>
+#include <GLMHelpers.h>
+
+#include "Shadertoy.h"
 
 namespace shadertoy {
-  static const int MAX_CHANNELS = 4;
 
-  extern const char* const UNIFORM_RESOLUTION;
-  extern const char* const UNIFORM_GLOBALTIME;
-  extern const char* const UNIFORM_CHANNEL_TIME;
-  extern const char* const UNIFORM_CHANNEL_RESOLUTIONS[MAX_CHANNELS];
-  extern const char* const UNIFORM_CHANNEL_RESOLUTION;
-  extern const char* const UNIFORM_MOUSE_COORDS;
-  extern const char* const UNIFORM_DATE;
-  extern const char* const UNIFORM_SAMPLE_RATE;
-  extern const char* const UNIFORM_POSITION;
-  extern const char* const UNIFORM_CHANNELS[MAX_CHANNELS];
+    struct Input {
+        using Pointer = std::shared_ptr<Input>;
 
-  extern const char* const SHADER_HEADER;
-  extern const char* const LINE_NUMBER_HEADER;
+        QString source;
+        InputType type{ NONE };
+        int channel{ -1 };
 
-  extern const QStringList TEXTURES;
-  extern const QStringList CUBEMAPS;
+        struct {
+            oglplus::TextureFilter filter{ oglplus::TextureFilter::Linear };
+            oglplus::TextureWrap wrap{ oglplus::TextureWrap::ClampToEdge };
+            bool flip{ true };
+            bool srgb{ false };
+            oglplus::PixelDataType format{ oglplus::PixelDataType::Byte };
+        } sampler;
 
-  enum class InputType { NONE, TEXTURE, CUBEMAP, AUDIO, VIDEO, KEYBOARD, MOUSE, BUFFER, WEBCAM };
+        vec3 resolution;
+        uvec2 size;
+
+        virtual TexturePtr get() = 0;
+
+        static Pointer load(const QVariant& v);
+
+    private:
+        Input();
+    };
 }

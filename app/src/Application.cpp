@@ -55,10 +55,9 @@ void Application::initializeUI(const QUrl& desktopUrl) {
     _cache = new Cache("C:/Users/Brad/git/shadertoys/");
     PluginApplication::initializeUI(desktopUrl);
     getActiveDisplayPlugin()->idle();
-    getOffscreenUi()->setRootContextProperty("Renderer", &_renderer);
+    getOffscreenUi()->setRootContextProperty("renderer", &_renderer);
     getOffscreenUi()->setRootContextProperty("shadertoyCache", _cache);
     getOffscreenUi()->getRootContext()->engine()->setNetworkAccessManagerFactory(new MyQmlNetworkAccessManagerFactory());
-
 }
 
 void Application::loadShader(const QString& shaderId) {

@@ -116,7 +116,7 @@ void Renderer::render() {
         renderGeometry(skybox, shadertoyProgram, uniformLambdas);
     });
     for (int i = 0; i < 4; ++i) {
-        oglplus::DefaultTexture().Active(0);
+        oglplus::DefaultTexture().Active(i);
         DefaultTexture().Bind(Texture::Target::_2D);
         DefaultTexture().Bind(Texture::Target::CubeMap);
     }

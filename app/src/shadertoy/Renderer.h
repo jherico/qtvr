@@ -38,6 +38,24 @@ namespace shadertoy {
             vec3 resolution;
         };
 
+        struct Input;
+        using InputPointer = std::shared_ptr<Input>;
+
+
+        /*
+            "id": 257,
+            "src": "\/presets\/previz\/buffer00.png",
+            "ctype": "buffer",
+            "channel": 0,
+            "sampler": 
+            {
+                "filter": "linear",
+                "wrap": "clamp",
+                "vflip": "true",
+                "srgb": "false",
+                "internal": "byte"
+            }
+        */
         struct TextureData {
             TexturePtr tex;
             uvec2 size;
@@ -50,6 +68,10 @@ namespace shadertoy {
         void currentShaderChanged();
         void validShaderChanged();
 
+    public slots:
+        void updateShaderSource(const QString& source);
+        void updateShaderInput(int channel, const QVariant& input);
+        void updateShader(const QVariant& shader);
             
     public:
         void setup();
@@ -89,15 +111,14 @@ namespace shadertoy {
         QString _currentShader;
         QString _validShader;
 
-        void initTextureCache();
+        //void initTextureCache();
+        //typedef std::map<QString, TextureData> TextureMap;
+        //typedef std::map<QString, QString> CanonicalPathMap;
+        //CanonicalPathMap canonicalPathMap;
+        //TextureMap textureCache;
 
-        typedef std::map<QString, TextureData> TextureMap;
-        typedef std::map<QString, QString> CanonicalPathMap;
-        CanonicalPathMap canonicalPathMap;
-        TextureMap textureCache;
         // The currently active input channels
-        Channel channels[4];
-        QString channelSources[4];
+        InputPointer inputs[4];
 
         //// The shadertoy rendering resolution scale.  1.0 means full resolution
         //// as defined by the Oculus SDK as the ideal offscreen resolution
