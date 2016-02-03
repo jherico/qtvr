@@ -100,6 +100,7 @@ QVariant Cache::fetchShader(const QString& shaderId) const  {
      id = o.id;
      info = o.info;
      tags = o.tags;
+     shader = o.shader;
      textSearch = o.textSearch;
      return *this;
  }

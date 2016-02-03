@@ -90,22 +90,20 @@ namespace shadertoy {
             this->resolution = resolution;
         }
 
-        QString canonicalTexturePath(QString texturePath) {
-            while (canonicalPathMap.count(texturePath)) {
-                texturePath = canonicalPathMap[texturePath];
-            }
-            return texturePath;
-        }
+        //QString canonicalTexturePath(QString texturePath) {
+        //    while (canonicalPathMap.count(texturePath)) {
+        //        texturePath = canonicalPathMap[texturePath];
+        //    }
+        //    return texturePath;
+        //}
 
         const QString& currentShader() const { return _currentShader; }
         void setCurrentShader(const QString& shader);
-        
         const QString& validShader() const { return _validShader; }
-
         virtual bool tryToBuild();
-        virtual TextureData loadTexture(const QString& source);
-        virtual void setChannelTextureInternal(int channel, shadertoy::ChannelInputType type, const QString & textureSource);
-        virtual void setShaderInternal(const shadertoy::Shader & shader);
+        //virtual TextureData loadTexture(const QString& source);
+        //virtual void setChannelTextureInternal(int channel, shadertoy::InputType type, const QString & textureSource);
+        //virtual void setShaderInternal(const shadertoy::Shader & shader);
 
     protected:
         QString _currentShader;

@@ -10,6 +10,7 @@ public:
 
 protected:
     virtual void paintGL() override;
+    virtual void resizeGL() override;
     virtual void cleanupBeforeQuit() override;
     virtual void aboutToQuit() override;
     virtual void initializeUI(const QUrl& desktopUrl) override;

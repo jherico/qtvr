@@ -8,10 +8,9 @@ import "../windows"
 Desktop {
     id: desktop
     rootMenu: AppMenu { }
-    property var editor;
-    property var browser;
+    property alias editor: editor;
+    property alias browser: browser;
     property var cursorPosition;
-    property var shadertoyCache;
 
     onCursorPositionChanged: {
         cursor.x = cursorPosition.x;
@@ -29,8 +28,6 @@ Desktop {
         hoverEnabled: true
         acceptedButtons: Qt.RightButton
         onClicked: desktop.toggleMenu(Qt.vector2d(mouseX, mouseY));
-//        onMouseXChanged: cursor.x = mouseX;
-//        onMouseYChanged: cursor.y = mouseY
     }
 
     FontAwesome {
@@ -79,24 +76,24 @@ Desktop {
         return result;
     }
 
-    Component { id: editorBuilder; Editor { } }
-    function toggleEditor() {
-        if (!editor) {
-            editor = editorBuilder.createObject(desktop);
-            editor.visible = true;
-        } else {
-            editor.visible = !editor.visible;
-        }
+    Editor {
+        id: editor;
+        visible: false;
     }
 
-    Component { id: browserBuilder; Browser { } }
+    function toggleEditor() {
+        editor.visible = !editor.visible;
+    }
+
+    Browser {
+        id: browser;
+        visible: false;
+        onSelectedShader: editor.loadShaderId(shaderId);
+    }
+
+
     function toggleBrowser() {
-        if (!browser) {
-            browser = browserBuilder.createObject(desktop);
-            browser.visible = true;
-        } else {
-            browser.visible = !browser.visible;
-        }
+        browser.visible = !browser.visible;
     }
 
     function findMenu(items, targetName) {

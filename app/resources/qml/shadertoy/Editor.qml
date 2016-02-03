@@ -16,6 +16,55 @@ Window {
     resizable: true
     objectName: "Editor"
     visible: false
+    property var currentShader;
+    property var channelImages: [
+        channel0image,
+        channel1image,
+        channel2image,
+        channel3image
+    ]
+
+    function loadShaderId(shaderId) {
+        console.log("Shader load request for editor " + shaderId)
+        shadertoy.api.fetchShader(shaderId, loadShader)
+    }
+
+    function loadShader(shader) {
+        console.log("Got shader data " + shader )
+        if (shader.renderpass.length != 1) {
+            console.warn("Multiple render passes not supported");
+            return;
+        }
+
+        var pass = shader.renderpass[0];
+        for (var i =0; i < pass.inputs.length; ++i) {
+            var input = pass.inputs[i];
+            if (input.ctype !== "texture" && input.ctype !== "cubemap") {
+                console.warn("Unsupported input type " + input.ctype);
+                return;
+            }
+        }
+
+        console.log("Loading text and image");
+
+        for (i = 0; i < 4; ++i) {
+            channelImages[i].source = ""
+        }
+
+        editor.setText(pass.code);
+        for (i =0; i < pass.inputs.length; ++i) {
+            input = pass.inputs[i];
+            channelImages[input.channel].source = "../../" + input.src;
+        }
+    }
+
+    function runShader() {
+        editor.getText(function(text){
+            console.log("Setting shader source");
+            renderer.updateShaderSource(text);
+//            renderer.updateShaderInput(int channel, const QVariant& input);
+        });
+    }
 
     Item {
         anchors.fill: parent;
@@ -80,11 +129,7 @@ Window {
                 color: "black"
                 MouseArea {
                     anchors.fill: parent;
-                    onClicked: {
-                        editor.getText(function(result){
-                            Renderer.currentShader = result;
-                        })
-                    }
+                    onClicked: runShader();
                 }
             }
 
@@ -120,8 +165,11 @@ Window {
                 fontSize = Qt.binding(function() { return fontSizeSpinner.value });
             }
 
-            function getText(f) { editor.runJavaScript("editor.getValue()", f); }
-            function setText() {
+            function getText(f) {
+                editor.runJavaScript("editor.getValue()", f);
+            }
+
+            function setText(content) {
                 var escapedShaderString = content.replace(/\n/g, "\\n")
                                                   .replace(/\'/g, "\\'")
                                                   .replace(/\"/g, '\\"')
@@ -192,23 +240,36 @@ Window {
             id: textureColumn
             anchors { right: parent.right; }
             spacing: 8
+
             Image {
+                id: channel0image
                 width: 128; height: 128;
                 source: "../../presets/cube00_0.jpg"
                 MouseArea {
                     anchors.fill: parent;
                     onClicked: pickerMaker.createObject(desktop);
                 }
+                Rectangle {
+                    z: -1
+                    anchors.fill: parent
+                    color: "#00000000"
+                    border.width: 4
+                    border.color: "black"
+                    radius: 8
+                }
             }
             Image {
+                id: channel1image
                 width: 128; height: 128;
                 source: "../../presets/tex00.jpg"
             }
             Image {
+                id: channel2image
                 width: 128; height: 128;
                 source: "../../presets/tex10.png"
             }
             Image {
+                id: channel3image
                 width: 128; height: 128;
                 source: "../../presets/cube01_0.png"
             }

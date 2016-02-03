@@ -6,7 +6,7 @@ QtObject {
     // API docs: https://www.shadertoy.com/api
     property string apiKey: "Nt8tw7"
 
-    property bool offline: false
+    property bool offline: true
 
     signal receivedShaderList(string shaderList)
     signal receivedShader(string shaderList)
@@ -40,7 +40,10 @@ QtObject {
 
     function fetchShader(shaderId, callback, ignoreCache) {
         if (offline) {
-            callback(shadertoyCache.fetchShader(shaderId));
+            console.log("Requested shader " + shaderId);
+            var result = shadertoyCache.fetchShader(shaderId);
+            console.log("Result " + result)
+            callback(result);
             return;
         }
 
@@ -75,6 +78,7 @@ QtObject {
             params = {}
         }
         if (offline) {
+            console.log(shadertoyCache)
             callback(shadertoyCache.queryShaders(query, params));
             return;
         }

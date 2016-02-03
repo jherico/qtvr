@@ -16,6 +16,8 @@ Window {
     resizable: true
     objectName: "Browser"
 
+    signal selectedShader(string shaderId);
+
     property bool ready: false
     property string query: ""
     property string filter: ""
@@ -118,7 +120,10 @@ Window {
                             anchors { left: parent.left; right: parent.right }
                             MouseArea {
                                 anchors.fill: parent;
-                                onDoubleClicked: desktop.loadShader(shaderId);
+                                onDoubleClicked: {
+                                    root.selectedShader(parent.shaderId);
+                                    root.visible = false;
+                                }
                             }
                         }
                     }

@@ -19,6 +19,10 @@
 #include <QtQml/QQmlContext>
 Cache* _cache;
 
+#include <FileUtils.h>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QJsonValue>
+
 
 class MyNetworkAccessManager : public QNetworkAccessManager {
 public:
@@ -37,8 +41,19 @@ class MyQmlNetworkAccessManagerFactory : public QQmlNetworkAccessManagerFactory 
     }
 };
 
+//const QString SHADERS_DIR = "C:/Users/Brad/git/shadertoys/";
+//for (auto shaderFile : QDir(SHADERS_DIR).entryList(QStringList(QString("*.json")))) {
+//    auto shaderDoc = QJsonDocument::fromJson(FileUtils::readFileToByteArray(SHADERS_DIR + shaderFile));
+//
+//    QFile formatted(SHADERS_DIR + shaderFile);
+//    formatted.open(QFile::ReadWrite | QFile::Truncate);
+//    QByteArray ba = shaderDoc.toJson(QJsonDocument::Indented);
+//    auto wrote = formatted.write(ba);
+//    Q_ASSERT(wrote == ba.size());
+//    formatted.close();
+//}
 
-Application::Application(int& argc, char** argv) : PluginApplication( argc, argv) {
+Application::Application(int& argc, char** argv) : PluginApplication(argc, argv) {
     Q_INIT_RESOURCE(ShadertoyVR);
 
     //getWindow()->setGeometry(100, -980, 1280, 720);
@@ -92,6 +107,12 @@ void Application::paintGL() {
         });
     } else {
         Context::Viewport(size.x, size.y);
+        _renderer.setResolution(size);
         _renderer.render();
     }
 }
+
+void Application::resizeGL() {
+    PluginApplication::resizeGL();
+    _renderer.setResolution(_renderResolution);
+};

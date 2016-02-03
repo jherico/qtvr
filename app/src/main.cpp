@@ -9,10 +9,6 @@
 
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
-//#include <QTranslator>
-//#include <QtCore/QElapsedTimer>
-//#include <SharedUtil.h>
-
 
 int main(int argc, const char* argv[]) {
     QSettings::setDefaultFormat(QSettings::IniFormat);
