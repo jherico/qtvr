@@ -140,7 +140,7 @@ Input::Pointer getTexture(const QVariantMap& input) {
 }
 
 
-void Input::bind() {
+void Input::bind(int channel) {
     if (texture && channel != -1) {
         using namespace oglplus;
         Texture::Active(channel);

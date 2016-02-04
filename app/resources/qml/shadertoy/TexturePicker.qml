@@ -11,16 +11,28 @@ ModalWindow {
     id: root
     width: 660
     height: 480
+    resizable: true
+    property int channel;
+    signal selected(int channel, var input)
 
+    function pickTexture(channel) {
+        currentChannel = channel;
+        root.visible = true;
+    }
 
     Rectangle {
         id: content
         anchors.fill: parent;
 
+        Settings {
+            category: "PickerWindow"
+            property alias width: root.width
+            property alias height: root.height
+        }
+
         Component {
             id: textureSelectBuilder
             Item {
-                id: root
                 implicitHeight: image.height
                 implicitWidth: image.width
                 Image {
@@ -30,6 +42,10 @@ ModalWindow {
                         id: imageMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
+                        onClicked: {
+                            root.selected(root.channel, modelData);
+                            root.visible = false;
+                        }
                     }
                 }
             }

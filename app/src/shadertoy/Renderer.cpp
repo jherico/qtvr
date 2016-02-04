@@ -95,20 +95,20 @@ void Renderer::updateUniforms() {
 
     uniformLambdas.clear();
     if (activeUniforms.count(UNIFORM_GLOBALTIME)) {
-        uniformLambdas.push_back([&] {
+        uniformLambdas.push_back([=] {
             Uniform<GLfloat>(*shadertoyProgram, UNIFORM_GLOBALTIME).Set(secTimestampNow() - startTime);
         });
     }
 
     if (activeUniforms.count(UNIFORM_RESOLUTION)) {
-        uniformLambdas.push_back([&] {
+        uniformLambdas.push_back([=] {
             vec3 res = vec3(resolution, 0);
             Uniform<vec3>(*shadertoyProgram, UNIFORM_RESOLUTION).Set(res);
         });
     }
 
     if (activeUniforms.count(shadertoy::UNIFORM_POSITION)) {
-        uniformLambdas.push_back([&] {
+        uniformLambdas.push_back([=] {
             Uniform<vec3>(*shadertoyProgram, shadertoy::UNIFORM_POSITION).Set(position);
         });
     }
@@ -116,7 +116,7 @@ void Renderer::updateUniforms() {
     for (int i = 0; i < 4; ++i) {
         if (activeUniforms.count(UNIFORM_CHANNELS[i]) && inputs[i]) {
             uniformLambdas.push_back([=] {
-                inputs[i]->bind();
+                inputs[i]->bind(i);
             });
         }
     }

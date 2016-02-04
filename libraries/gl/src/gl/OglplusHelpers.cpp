@@ -11,6 +11,7 @@
 
 #include <QtCore/QUrl>
 #include <QtGui/QImage>
+#include <QGLWidget>
 
 #include <oglplus/shapes/sky_box.hpp>
 #include <oglplus/shapes/sphere.hpp>
@@ -392,6 +393,7 @@ typedef TextureMap::iterator TextureMapItr;
 
 ImagePtr loadImage(const QString& path, bool flip) {
     QImage image = QImage(path).mirrored(false, true);
+    image = QGLWidget::convertToGLFormat(image);
     using namespace oglplus;
     size_t width = image.width();
     size_t height = image.height();
@@ -446,6 +448,7 @@ TexturePtr load2dTexture(const QString& path) {
 
 TexturePtr load2dTexture(const QString& path, uvec2 & outSize) {
     QImage image = QImage(path).mirrored(false, true);
+    image = QGLWidget::convertToGLFormat(image);
     using namespace oglplus;
     outSize.x = image.width();
     outSize.y = image.height();

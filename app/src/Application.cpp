@@ -42,8 +42,8 @@ Application::Application(int& argc, char** argv) : PluginApplication(argc, argv)
     Q_INIT_RESOURCE(ShadertoyVR);
 
 
-    //getWindow()->setGeometry(100, -980, 1280, 720);
-    getWindow()->setGeometry(100, 100, 1280, 720);
+    getWindow()->setGeometry(100, -980, 1280, 720);
+    //getWindow()->setGeometry(100, 100, 1280, 720);
 
 //    setOverrideCursor(Qt::BlankCursor);
     initializeUI(QUrl::fromLocalFile("shadertoy/AppDesktop.qml"));
@@ -54,7 +54,7 @@ Application::Application(int& argc, char** argv) : PluginApplication(argc, argv)
 }
 
 void Application::initializeUI(const QUrl& desktopUrl) {
-    _cache = new Cache("C:/Users/austi/git/shadertoys/");
+    _cache = new Cache("C:/Users/brad/git/shadertoys/");
     PluginApplication::initializeUI(desktopUrl);
     getActiveDisplayPlugin()->idle();
     getOffscreenUi()->setRootContextProperty("renderer", &_renderer);

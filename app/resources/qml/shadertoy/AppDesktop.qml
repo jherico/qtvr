@@ -91,7 +91,6 @@ Desktop {
         onSelectedShader: editor.loadShaderId(shaderId);
     }
 
-
     function toggleBrowser() {
         browser.visible = !browser.visible;
     }
@@ -102,6 +101,22 @@ Desktop {
                 return items[i];
             }
         }
+    }
+
+    Component {
+        id: texturePickerBuilder;
+        TexturePicker {
+            onSelected: {
+                console.log("Selected texture " + input + " for channel " + channel)
+                console.log("Preview " + input.preview);
+                editor.setInput(channel, input)
+
+            }
+        }
+    }
+
+    function pickTexture(channel) {
+        texturePickerBuilder.createObject(desktop, { channel: channel });
     }
 
 

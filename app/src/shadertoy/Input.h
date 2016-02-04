@@ -44,7 +44,7 @@ struct Input {
     vec3 resolution;
     uvec2 size;
 
-    void bind();
+    void bind(int channel);
 };
 
 Input::Pointer getTexture(const QVariantMap& input);

@@ -16,17 +16,12 @@ Window {
     resizable: true
     objectName: "Editor"
     visible: false
-    readonly property var prefix: "https://www.shadertoy.com/"
+
+    readonly property string prefix: "../.."
     property var currentShader;
-    property var currentInputs: [
-        null, null, null, null
-    ]
-    property var channelImages: [
-        channel0image,
-        channel1image,
-        channel2image,
-        channel3image
-    ]
+    property var currentShaderText;
+    property var currentInputs: [ shadertoy.misc[0], shadertoy.misc[0], shadertoy.misc[0], shadertoy.misc[0] ]
+    property var channelImages: [ textureImage0, textureImage1, textureImage2, textureImage3 ]
 
     function loadShaderId(shaderId) {
         console.log("Shader load request for editor " + shaderId)
@@ -59,12 +54,18 @@ Window {
 
         editor.setText(pass.code);
         for (i = 0; i < pass.inputs.length; ++i) {
-            input = pass.inputs[i];
             var channel = input.channel
-            currentInputs[channel] = input;
-            console.log("Channel " + channel + " source is now " + currentInputs[channel].src)
-            channelImages[channel].source = prefix + currentInputs[channel].src;
+            input = pass.inputs[i];
+            setInput(channel, input);
         }
+    }
+
+    function setInput(channel, input) {
+        console.log("Setting channel " + channel + " to input " + input.src)
+        currentInputs[channel] = input;
+        console.log("Channel " + channel + " source is now " + currentInputs[channel].src)
+        console.log(channelImages[channel]);
+        channelImages[channel].source = prefix + currentInputs[channel].src;
     }
 
     function runShader() {
@@ -129,6 +130,13 @@ Window {
             property alias height: root.height
             property alias textSize: editor.fontSize
             property alias theme: editor.theme
+            property alias currentText: root.currentShaderText
+        }
+
+        Timer {
+            interval: 5000
+            repeat: true
+            onTriggered: editor.getText(function(text){ currentShaderText = text; });
         }
 
         Row {
@@ -236,58 +244,32 @@ Window {
                     }
                 }
             }
-
         }
-
-        Component {
-            id: textureViewBuilder
-            Item {
-                width: 128; height: 128
-            }
-        }
-
-        Component { id: pickerMaker; TexturePicker {} }
 
         Column {
             id: textureColumn
             anchors { right: parent.right; }
             spacing: 8
 
-            Image {
-                id: channel0image
-                width: 128; height: 128;
-                readonly property int channel: 0
-                source: currentInputs[channel] ? prefix + input.src : "";
-                MouseArea {
-                    anchors.fill: parent;
-                    onClicked: pickerMaker.createObject(desktop);
-                }
-                Rectangle {
-                    z: -1
-                    anchors.fill: parent
-                    color: "#00000000"
-                    border.width: 4
-                    border.color: "black"
-                    radius: 8
-                }
+            TextureImage {
+                id: textureImage0
+                source: currentInputs[0].preview
+                channel: 0
             }
-            Image {
-                id: channel1image
-                width: 128; height: 128;
-                readonly property int channel: 1
-                source: currentInputs[channel] ? prefix + input.src : "";
+            TextureImage {
+                id: textureImage1
+                source: currentInputs[1].preview
+                channel: 1
             }
-            Image {
-                id: channel2image
-                width: 128; height: 128;
-                readonly property int channel: 1
-                source: currentInputs[channel] ? prefix + input.src : "";
+            TextureImage {
+                id: textureImage2
+                source: currentInputs[2].preview
+                channel: 2
             }
-            Image {
-                id: channel3image
-                width: 128; height: 128;
-                readonly property int channel: 1
-                source: currentInputs[channel] ? prefix + input.src : "";
+            TextureImage {
+                id: textureImage3
+                source: currentInputs[3].preview
+                channel: 3
             }
         }
     }
