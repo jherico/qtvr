@@ -24,6 +24,7 @@ limitations under the License.
 #include <GLMHelpers.h>
 
 #include "Shadertoy.h"
+#include "Input.h"
 
 namespace shadertoy {
 
@@ -32,36 +33,6 @@ namespace shadertoy {
         Q_PROPERTY(QString currentShader READ currentShader WRITE setCurrentShader NOTIFY currentShaderChanged)
         Q_PROPERTY(QString validShader READ validShader NOTIFY validShaderChanged)
 
-        struct Channel {
-            oglplus::Texture::Target target;
-            TexturePtr texture;
-            vec3 resolution;
-        };
-
-        struct Input;
-        using InputPointer = std::shared_ptr<Input>;
-
-
-        /*
-            "id": 257,
-            "src": "\/presets\/previz\/buffer00.png",
-            "ctype": "buffer",
-            "channel": 0,
-            "sampler": 
-            {
-                "filter": "linear",
-                "wrap": "clamp",
-                "vflip": "true",
-                "srgb": "false",
-                "internal": "byte"
-            }
-        */
-        struct TextureData {
-            TexturePtr tex;
-            uvec2 size;
-        };
-
-    public:
     signals:
         void compileError(const QString & source);
         void compileSuccess();
@@ -72,7 +43,8 @@ namespace shadertoy {
         void updateShaderSource(const QString& source);
         void updateShaderInput(int channel, const QVariant& input);
         void updateShader(const QVariant& shader);
-            
+        void build();
+
     public:
         void setup();
         void render();
@@ -116,7 +88,7 @@ namespace shadertoy {
         //TextureMap textureCache;
 
         // The currently active input channels
-        InputPointer inputs[4];
+        Input::Pointer inputs[4];
 
         //// The shadertoy rendering resolution scale.  1.0 means full resolution
         //// as defined by the Oculus SDK as the ideal offscreen resolution

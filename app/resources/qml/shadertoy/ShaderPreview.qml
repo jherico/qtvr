@@ -43,8 +43,8 @@ Rectangle {
         anchors { left: parent.left; top: label.bottom; margins: 8 }
         width: 256; height: width / 16 * 9
         fillMode: Image.PreserveAspectFit
-        //source: "https://www.shadertoy.com/media/shaders/" + shaderId + ".jpg"
-        source: "../../shadertoys/" + shaderId + ".jpg"
+        source: "https://www.shadertoy.com/media/shaders/" + shaderId + ".jpg"
+        //source: "../../shadertoys/" + shaderId + ".jpg"
     }
 
 

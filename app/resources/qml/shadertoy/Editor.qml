@@ -16,7 +16,11 @@ Window {
     resizable: true
     objectName: "Editor"
     visible: false
+    readonly property var prefix: "https://www.shadertoy.com/"
     property var currentShader;
+    property var currentInputs: [
+        null, null, null, null
+    ]
     property var channelImages: [
         channel0image,
         channel1image,
@@ -27,10 +31,12 @@ Window {
     function loadShaderId(shaderId) {
         console.log("Shader load request for editor " + shaderId)
         shadertoy.api.fetchShader(shaderId, loadShader)
+        root.visible = true;
     }
 
     function loadShader(shader) {
         console.log("Got shader data " + shader )
+        root.currentShader = shader;
         if (shader.renderpass.length != 1) {
             console.warn("Multiple render passes not supported");
             return;
@@ -48,13 +54,16 @@ Window {
         console.log("Loading text and image");
 
         for (i = 0; i < 4; ++i) {
-            channelImages[i].source = ""
+            currentInputs[i] = null;
         }
 
         editor.setText(pass.code);
-        for (i =0; i < pass.inputs.length; ++i) {
+        for (i = 0; i < pass.inputs.length; ++i) {
             input = pass.inputs[i];
-            channelImages[input.channel].source = "../../" + input.src;
+            var channel = input.channel
+            currentInputs[channel] = input;
+            console.log("Channel " + channel + " source is now " + currentInputs[channel].src)
+            channelImages[channel].source = prefix + currentInputs[channel].src;
         }
     }
 
@@ -62,7 +71,10 @@ Window {
         editor.getText(function(text){
             console.log("Setting shader source");
             renderer.updateShaderSource(text);
-//            renderer.updateShaderInput(int channel, const QVariant& input);
+            for (var i = 0; i < 4; ++i) {
+                renderer.updateShaderInput(i, root.currentInputs[i]);
+            }
+            renderer.build();
         });
     }
 
@@ -244,7 +256,8 @@ Window {
             Image {
                 id: channel0image
                 width: 128; height: 128;
-                source: "../../presets/cube00_0.jpg"
+                readonly property int channel: 0
+                source: currentInputs[channel] ? prefix + input.src : "";
                 MouseArea {
                     anchors.fill: parent;
                     onClicked: pickerMaker.createObject(desktop);
@@ -261,17 +274,20 @@ Window {
             Image {
                 id: channel1image
                 width: 128; height: 128;
-                source: "../../presets/tex00.jpg"
+                readonly property int channel: 1
+                source: currentInputs[channel] ? prefix + input.src : "";
             }
             Image {
                 id: channel2image
                 width: 128; height: 128;
-                source: "../../presets/tex10.png"
+                readonly property int channel: 1
+                source: currentInputs[channel] ? prefix + input.src : "";
             }
             Image {
                 id: channel3image
                 width: 128; height: 128;
-                source: "../../presets/cube01_0.png"
+                readonly property int channel: 1
+                source: currentInputs[channel] ? prefix + input.src : "";
             }
         }
     }

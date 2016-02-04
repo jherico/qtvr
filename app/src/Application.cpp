@@ -24,24 +24,7 @@ Cache* _cache;
 #include <QtCore/QJsonValue>
 
 
-class MyNetworkAccessManager : public QNetworkAccessManager {
-public:
-    MyNetworkAccessManager(QObject *parent) : QNetworkAccessManager(parent) {}
-
-    QNetworkReply* MyNetworkAccessManager::createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest& req, QIODevice* outgoingData) override {
-        QNetworkRequest newRequest(req);
-        newRequest.setHeader(QNetworkRequest::UserAgentHeader, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36");
-        return QNetworkAccessManager::createRequest(op, newRequest, outgoingData);
-    }
-};
-
-class MyQmlNetworkAccessManagerFactory : public QQmlNetworkAccessManagerFactory {
-    QNetworkAccessManager* create(QObject*parent) override {
-        return new MyNetworkAccessManager(parent);
-    }
-};
-
-//const QString SHADERS_DIR = "C:/Users/Brad/git/shadertoys/";
+//const QString SHADERS_DIR = "C:/Users/austi/git/shadertoys/";
 //for (auto shaderFile : QDir(SHADERS_DIR).entryList(QStringList(QString("*.json")))) {
 //    auto shaderDoc = QJsonDocument::fromJson(FileUtils::readFileToByteArray(SHADERS_DIR + shaderFile));
 //
@@ -53,31 +36,33 @@ class MyQmlNetworkAccessManagerFactory : public QQmlNetworkAccessManagerFactory 
 //    formatted.close();
 //}
 
+void initTextureCache();
+
 Application::Application(int& argc, char** argv) : PluginApplication(argc, argv) {
     Q_INIT_RESOURCE(ShadertoyVR);
 
+
     //getWindow()->setGeometry(100, -980, 1280, 720);
     getWindow()->setGeometry(100, 100, 1280, 720);
-    setOverrideCursor(Qt::BlankCursor);
 
+//    setOverrideCursor(Qt::BlankCursor);
     initializeUI(QUrl::fromLocalFile("shadertoy/AppDesktop.qml"));
-    auto desktop = getOffscreenUi()->getDesktop();
-    QObject::connect(desktop, SIGNAL(loadShader(QString)), this, SLOT(loadShader(const QString&)));
+
+    initTextureCache();
+
     _renderer.setup();
 }
 
 void Application::initializeUI(const QUrl& desktopUrl) {
-    _cache = new Cache("C:/Users/Brad/git/shadertoys/");
+    _cache = new Cache("C:/Users/austi/git/shadertoys/");
     PluginApplication::initializeUI(desktopUrl);
     getActiveDisplayPlugin()->idle();
     getOffscreenUi()->setRootContextProperty("renderer", &_renderer);
     getOffscreenUi()->setRootContextProperty("shadertoyCache", _cache);
-    getOffscreenUi()->getRootContext()->engine()->setNetworkAccessManagerFactory(new MyQmlNetworkAccessManagerFactory());
 }
 
 void Application::loadShader(const QString& shaderId) {
     qDebug() << "Request load for shader " << shaderId;
-
 }
 
 
@@ -116,3 +101,6 @@ void Application::resizeGL() {
     PluginApplication::resizeGL();
     _renderer.setResolution(_renderResolution);
 };
+
+
+

@@ -130,6 +130,7 @@ QVariant Cache::fetchShader(const QString& shaderId) const  {
      for (const auto& tagJson : tagsJson){
          tags.insert(tagJson.toString());
      }
+     return true;
  }
 
  bool Cache::Item::matchQuery(const QRegularExpression& re) const {

@@ -447,15 +447,20 @@ TexturePtr load2dTexture(const QString& path) {
 TexturePtr load2dTexture(const QString& path, uvec2 & outSize) {
     QImage image = QImage(path).mirrored(false, true);
     using namespace oglplus;
-    size_t width = image.width();
-    size_t height = image.height();
+    outSize.x = image.width();
+    outSize.y = image.height();
     PixelDataFormat format = PixelDataFormat::RGB;
     if (image.hasAlphaChannel()) {
         format = PixelDataFormat::RGBA;
     }
     TexturePtr result(new oglplus::Texture());
-    Context::Bound(Texture::Target::_2D, *result).Image2D(0, PixelDataInternalFormat::RGBA8, width, height, 0,
-        format, PixelDataType::UnsignedByte, image.constBits());
+    Context::Bound(Texture::Target::_2D, *result)
+        .Image2D(0, PixelDataInternalFormat::RGBA8, outSize.x, outSize.y, 0, format, PixelDataType::UnsignedByte, image.constBits())
+        .GenerateMipmap()
+        .MinFilter(TextureMinFilter::Linear)
+        .MagFilter(TextureMagFilter::Linear)
+        .WrapS(TextureWrap::ClampToEdge)
+        .WrapT(TextureWrap::ClampToEdge);
     return result;
 }
 

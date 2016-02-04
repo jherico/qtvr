@@ -117,7 +117,7 @@ Window {
                     Component {
                         id: shaderPreviewBuilder;
                         ShaderPreview {
-                            anchors { left: parent.left; right: parent.right }
+                            width: flow.width
                             MouseArea {
                                 anchors.fill: parent;
                                 onDoubleClicked: {

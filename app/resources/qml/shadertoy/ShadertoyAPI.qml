@@ -6,7 +6,7 @@ QtObject {
     // API docs: https://www.shadertoy.com/api
     property string apiKey: "Nt8tw7"
 
-    property bool offline: true
+    property bool offline: false
 
     signal receivedShaderList(string shaderList)
     signal receivedShader(string shaderList)
@@ -104,9 +104,16 @@ QtObject {
         }
 
         var url = apiBaseUrl + path + "?" + queryString;
+        console.log("Requesting " + url)
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                callback(xhr.responseText);
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    callback(xhr.responseText);
+                } else {
+                    console.warn("Status result " + xhr.status)
+                }
+            } else {
+                console.log(xhr.readyState);
             }
         };
         xhr.open('GET', url, true);

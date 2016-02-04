@@ -24,3 +24,27 @@ limitations under the License.
 #include <GLMHelpers.h>
 
 #include "Shadertoy.h"
+
+struct Input {
+    using Pointer = std::shared_ptr<Input>;
+    shadertoy::InputType type{ shadertoy::InputType::NONE };
+    int channel{ -1 };
+
+    struct {
+        oglplus::TextureMinFilter minFilter{ oglplus::TextureMinFilter::Nearest };
+        oglplus::TextureMagFilter magFilter{ oglplus::TextureMagFilter::Nearest };
+        oglplus::TextureWrap wrap{ oglplus::TextureWrap::ClampToEdge };
+        bool flip{ true };
+        bool srgb{ false };
+        oglplus::PixelDataType format{ oglplus::PixelDataType::Byte };
+    } sampler;
+
+    TexturePtr texture;
+    oglplus::TextureTarget target{ oglplus::TextureTarget::_2D };
+    vec3 resolution;
+    uvec2 size;
+
+    void bind();
+};
+
+Input::Pointer getTexture(const QVariantMap& input);

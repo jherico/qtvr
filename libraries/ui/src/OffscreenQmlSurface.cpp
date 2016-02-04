@@ -342,6 +342,23 @@ OffscreenQmlSurface::~OffscreenQmlSurface() {
     delete _qmlEngine;
 }
 
+class MyNetworkAccessManager : public QNetworkAccessManager {
+public:
+    MyNetworkAccessManager(QObject *parent) : QNetworkAccessManager(parent) {}
+
+    QNetworkReply* MyNetworkAccessManager::createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest& req, QIODevice* outgoingData) override {
+        QNetworkRequest newRequest(req);
+        newRequest.setHeader(QNetworkRequest::UserAgentHeader, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36");
+        return QNetworkAccessManager::createRequest(op, newRequest, outgoingData);
+    }
+};
+
+class MyQmlNetworkAccessManagerFactory : public QQmlNetworkAccessManagerFactory {
+    QNetworkAccessManager* create(QObject*parent) override {
+        return new MyNetworkAccessManager(parent);
+    }
+};
+
 void OffscreenQmlSurface::create(QOpenGLContext* shareContext) {
     _renderer = new OffscreenQmlRenderer(this, shareContext);
 
@@ -350,6 +367,7 @@ void OffscreenQmlSurface::create(QOpenGLContext* shareContext) {
     if (!_qmlEngine->incubationController()) {
         _qmlEngine->setIncubationController(_renderer->_quickWindow->incubationController());
     }
+    _qmlEngine->setNetworkAccessManagerFactory(new MyQmlNetworkAccessManagerFactory());
 
     // When Quick says there is a need to render, we will not render immediately. Instead,
     // a timer with a small interval is used to get better performance.

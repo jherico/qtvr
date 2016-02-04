@@ -32,6 +32,7 @@ using namespace shadertoy;
 void Renderer::setup() {
     Q_ASSERT(QOpenGLContext::currentContext());
     setCurrentShader(FileUtils::readFileToString(":/shadertoys/default.fs"));
+    build();
     assert(shadertoyProgram);
     skybox = loadSkybox(shadertoyProgram);
     Platform::addShutdownHook([&] {
@@ -46,69 +47,16 @@ void Renderer::updateShaderSource(const QString& source) {
     setCurrentShader(source);
 
 }
-void Renderer::updateShaderInput(int channel, const QVariant& input) {}
-void Renderer::updateShader(const QVariant& shader) {}
+void Renderer::updateShaderInput(int channel, const QVariant& input) {
+    if (!input.isValid()) {
+        inputs[channel] = Input::Pointer();
+        return;
+    }
+    inputs[channel] = getTexture(input.toMap());
+}
 
-
-//void Renderer::initTextureCache() {
-//    using namespace shadertoy;
-//    QRegExp re("(tex|cube)(\\d+)(_0)?\\.(png|jpg)");
-//    Platform::addShutdownHook([&] {
-//    });
-//
-//    for (int i = 0; i < TEXTURES.size(); ++i) {
-//        QString path = TEXTURES.at(i);
-//        QString fileName = path.split("/").back();
-//        qDebug() << "Loading texture from " << path;
-//        TextureData & cacheEntry = textureCache[path];
-//        cacheEntry.tex = load2dTexture(":" + path, cacheEntry.size);
-//        canonicalPathMap["qrc:" + path] = path;
-//
-//        // Backward compatibility
-//        if (re.exactMatch(fileName)) {
-//            int textureId = re.cap(2).toInt();
-//
-//            QString alias = QString("preset://tex/%1").arg(textureId);
-//            qDebug() << "Adding alias for " << path << " to " << alias;
-//            canonicalPathMap[alias] = path;
-//
-//            alias = QString("preset://tex/%1").arg(textureId, 2, 10, QChar('0'));
-//            qDebug() << "Adding alias for " << path << " to " << alias;
-//            canonicalPathMap[alias] = path;
-//        }
-//    }
-//
-//    for (int i = 0; i < CUBEMAPS.size(); ++i) {
-//        QString pathTemplate = CUBEMAPS.at(i);
-//        QString path = pathTemplate.arg(0);
-//        QString fileName = path.split("/").back();
-//        qDebug() << "Processing path " << path;
-//        TextureData & cacheEntry = textureCache[path];
-//        cacheEntry.tex = loadCubemapTexture([&](int i) {
-//            QString texturePath = pathTemplate.arg(i);
-//            ImagePtr image = loadImage(":" + texturePath, false);
-//            cacheEntry.size = uvec2(image->Width(), image->Height());
-//            return image;
-//        });
-//        canonicalPathMap["qrc:" + path] = path;
-//
-//        // Backward compatibility
-//        if (re.exactMatch(fileName)) {
-//            int textureId = re.cap(2).toInt();
-//            QString alias = QString("preset://cube/%1").arg(textureId);
-//            qDebug() << "Adding alias for " << path << " to " << alias;
-//            canonicalPathMap[alias] = path;
-//
-//            alias = QString("preset://cube/%1").arg(textureId, 2, 10, QChar('0'));
-//            qDebug() << "Adding alias for " << path << " to " << alias;
-//            canonicalPathMap[alias] = path;
-//        }
-//    }
-//
-//    std::for_each(canonicalPathMap.begin(), canonicalPathMap.end(), [&](CanonicalPathMap::const_reference & entry) {
-//        qDebug() << entry.second << "\t" << entry.first;
-//    });
-//}
+void Renderer::updateShader(const QVariant& shader) {
+}
 
 void Renderer::render() {
     if (!shadertoyProgram) {
@@ -138,12 +86,11 @@ void Renderer::updateUniforms() {
         if (activeUniforms.count(uniformName)) {
             QOpenGLContext::currentContext()->functions()->glUniform1i(activeUniforms[uniformName], i);
         }
-        //if (channels[i].texture) {
-        //    if (activeUniforms.count(UNIFORM_CHANNEL_RESOLUTIONS[i])) {
-        //        Uniform<vec3>(*shadertoyProgram, UNIFORM_CHANNEL_RESOLUTIONS[i]).Set(channels[i].resolution);
-        //    }
-
-        //}
+        if (inputs[i] && inputs[i]->texture) {
+            if (activeUniforms.count(UNIFORM_CHANNEL_RESOLUTIONS[i])) {
+                Uniform<vec3>(*shadertoyProgram, UNIFORM_CHANNEL_RESOLUTIONS[i]).Set(inputs[i]->resolution);
+            }
+        }
     }
 
     uniformLambdas.clear();
@@ -166,16 +113,13 @@ void Renderer::updateUniforms() {
         });
     }
 
-    //for (int i = 0; i < 4; ++i) {
-    //    if (activeUniforms.count(UNIFORM_CHANNELS[i]) && channels[i].texture) {
-    //        uniformLambdas.push_back([=] {
-    //            if (this->channels[i].texture) {
-    //                Texture::Active(i);
-    //                this->channels[i].texture->Bind(channels[i].target);
-    //            }
-    //        });
-    //    }
-    //}
+    for (int i = 0; i < 4; ++i) {
+        if (activeUniforms.count(UNIFORM_CHANNELS[i]) && inputs[i]) {
+            uniformLambdas.push_back([=] {
+                inputs[i]->bind();
+            });
+        }
+    }
 }
 
 //void mainImage( out vec4 fragColor, in vec2 fragCoord );
@@ -203,12 +147,15 @@ bool Renderer::tryToBuild() {
         }
 
         QString header = shadertoy::SHADER_HEADER;
-        //for (int i = 0; i < 4; ++i) {
-        //    const Channel & channel = channels[i];
-        //    QString line; line.sprintf("uniform sampler%s iChannel%d;\n",
-        //        channel.target == Texture::Target::CubeMap ? "Cube" : "2D", i);
-        //    header += line;
-        //}
+        for (int i = 0; i < 4; ++i) {
+            auto input = inputs[i];
+            if (!input) {
+                continue;
+            }
+            QString line; line.sprintf("uniform sampler%s iChannel%d;\n",
+                input->target == Texture::Target::CubeMap ? "Cube" : "2D", i);
+            header += line;
+        }
         
         header += shadertoy::LINE_NUMBER_HEADER;
         FragmentShaderPtr newFragmentShader(new FragmentShader());
@@ -248,73 +195,13 @@ bool Renderer::tryToBuild() {
     return true;
 }
 
-//Renderer::TextureData Renderer::loadTexture(const QString& originalSource) {
-//    qDebug() << "Looking for texture " << originalSource;
-//    QString source = originalSource;
-//    while (canonicalPathMap.count(source)) {
-//        source = canonicalPathMap[source];
-//    }
-//
-//    if (!textureCache.count(source)) {
-//        qWarning() << "Texture " << source << " not found, loading";
-//        TextureData& textureData = textureCache[source];
-//        textureData.tex = load2dTexture(source, textureData.size);
-//    }
-//    return textureCache[source];
-//}
-//
-//void Renderer::setChannelTextureInternal(int channel, shadertoy::ChannelInputType type, const QString & textureSource) {
-//    using namespace oglplus;
-//    if (textureSource == channelSources[channel]) {
-//        return;
-//    }
-//
-//    channelSources[channel] = textureSource;
-//
-//    if (textureSource.isEmpty()) {
-//        channels[channel].texture.reset();
-//        channels[channel].target = Texture::Target::_2D;
-//        return;
-//    }
-//
-//    Channel newChannel;
-//    uvec2 size;
-//    auto texData = loadTexture(textureSource);
-//    newChannel.texture = texData.tex;
-//    switch (type) {
-//    case shadertoy::ChannelInputType::TEXTURE:
-//        newChannel.target = Texture::Target::_2D;
-//        newChannel.resolution = vec3(texData.size, 0);
-//        break;
-//
-//    case shadertoy::ChannelInputType::CUBEMAP:
-//        newChannel.target = Texture::Target::CubeMap;
-//        newChannel.resolution = vec3(texData.size.x);
-//        break;
-//
-//    case shadertoy::ChannelInputType::VIDEO:
-//        // FIXME, not supported
-//        break;
-//
-//    case shadertoy::ChannelInputType::AUDIO:
-//        // FIXME, not supported
-//        break;
-//    }
-//
-//    channels[channel] = newChannel;
-//}
-//
-//void Renderer::setShaderInternal(const shadertoy::Shader & shader) {
-//    for (int i = 0; i < shadertoy::MAX_CHANNELS; ++i) {
-//        setChannelTextureInternal(i, shader.channelTypes[i], shader.channelTextures[i]);
-//    }
-//    setCurrentShader(shader.fragmentSource);
-//}
-
 void Renderer::setCurrentShader(const QString& shader) {
     if (shader != _currentShader) {
         _currentShader = shader;
         emit currentShaderChanged();
-        tryToBuild();
     }
+}
+
+void Renderer::build() {
+    tryToBuild();
 }

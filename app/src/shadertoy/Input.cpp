@@ -21,29 +21,39 @@ limitations under the License.
 
 using namespace shadertoy;
 
-struct Input {
-    using Pointer = std::shared_ptr<Input>;
+QHash<QString, Input> cachedTextures;
 
-    QString source;
-    InputType type{ InputType::NONE };
-    int channel{ -1 };
+void initTextureCache() {
+    using namespace shadertoy;
 
-    struct {
-        oglplus::TextureFilter filter{ oglplus::TextureFilter::Linear };
-        oglplus::TextureWrap wrap{ oglplus::TextureWrap::ClampToEdge };
-        bool flip{ true };
-        bool srgb{ false };
-        oglplus::PixelDataType format{ oglplus::PixelDataType::Byte };
-    } sampler;
+    for (int i = 0; i < TEXTURES.size(); ++i) {
+        QString path = TEXTURES.at(i);
+        qDebug() << "Loading texture from " << path;
 
-    vec3 resolution;
-    uvec2 size;
+        Input result;
+        result.texture = load2dTexture(":" + path, result.size);
 
-    static Pointer load(const QVariant& v);
+        result.resolution = vec3(result.size, 0);
+        result.target = oglplus::TextureTarget::_2D;
+        cachedTextures[path] = result;
+    }
 
-protected:
-    Input() {}
-};
+    for (int i = 0; i < CUBEMAPS.size(); ++i) {
+        QString pathTemplate = CUBEMAPS.at(i);
+        QString path = pathTemplate.arg(0);
+        qDebug() << "Processing path " << path;
+        Input result;
+        result.texture = loadCubemapTexture([&](int i) {
+            QString texturePath = pathTemplate.arg(i);
+            ImagePtr image = loadImage(":" + texturePath, false);
+            result.size = uvec2(image->Width(), image->Height());
+            return image;
+        });
+        result.target = oglplus::TextureTarget::CubeMap;
+        result.resolution = vec3(result.size, result.size.x);
+        cachedTextures[path] = result;
+    }
+}
 
 InputType typeForString(const QString& typeName) {
     if (typeName == "texture") {
@@ -66,6 +76,7 @@ InputType typeForString(const QString& typeName) {
     return InputType::NONE;
 }
 
+
 //{
 //    "id": 257,
 //    "src" : "\/presets\/previz\/buffer00.png",
@@ -80,49 +91,64 @@ InputType typeForString(const QString& typeName) {
 //            "internal" : "byte"
 //    }
 //},
-
-struct BaseInput : public Input {
-    BaseInput(const QVariantMap& vmap) {
-        source = vmap["src"].toString();
-        channel = vmap["channel"].isValid() ? vmap["channel"].toInt() : -1;
-        auto sampler = vmap["sampler"].toMap();
-        //filter = 
-        //oglplus::TextureFilter filter{ oglplus::TextureFilter::Linear };
-        //oglplus::TextureWrap wrap{ oglplus::TextureWrap::ClampToEdge };
-        //bool flip{ true };
-        //bool srgb{ false };
-        //oglplus::PixelDataType format{ oglplus::PixelDataType::Byte };
-
+Input::Pointer getTexture(const QVariantMap& input) {
+    const QString path = input["src"].toString();
+    qDebug() << path;
+    if (!cachedTextures.contains(path)) {
+        return Input::Pointer();
     }
 
-    TexturePtr get() {
-        return TexturePtr();
-    }
-};
+    Input result = cachedTextures[path];
+    result.type = typeForString(input["ctype"].toString());
+    //source = vmap["src"].toString();
+    result.channel = input["channel"].isValid() ? input["channel"].toInt() : -1;
 
-struct TextureInput : public BaseInput {
-    TextureInput(const QVariantMap& vmap) : BaseInput(vmap) {
-        type = InputType::TEXTURE;
+    //    "sampler" :
+    //    {
+    //        "filter": "linear",
+    //            "wrap" : "clamp",
+    //            "vflip" : "true",
+    //            "srgb" : "false",
+    //            "internal" : "byte"
+    //    }
+    auto sampler = input["sampler"].toMap();
+    auto filter = sampler["filter"].toString();
+    if (filter == "nearest") {
+        result.sampler.minFilter = oglplus::TextureMinFilter::Nearest;
+        result.sampler.magFilter = oglplus::TextureMagFilter::Nearest;
+    } else if (filter == "linear") {
+        result.sampler.minFilter = oglplus::TextureMinFilter::Linear;
+        result.sampler.magFilter = oglplus::TextureMagFilter::Linear;
+    } else if (filter == "mipmap") {
+        result.sampler.minFilter = oglplus::TextureMinFilter::LinearMipmapLinear;
+        result.sampler.magFilter = oglplus::TextureMagFilter::Linear;
+    } else {
+        result.sampler.minFilter = oglplus::TextureMinFilter::Nearest;
+        result.sampler.magFilter = oglplus::TextureMagFilter::Nearest;
+        qDebug() << "Warning, unknown filter type " << filter;
     }
-};
 
-struct CubemapInput : public BaseInput {
-    CubemapInput(const QVariantMap& vmap) : BaseInput(vmap) {
-        type = InputType::TEXTURE;
+    auto wrap = sampler["wrap"].toString();
+    if (wrap == "clamp") {
+        result.sampler.wrap = oglplus::TextureWrap::ClampToEdge;
+    } else if (wrap == "repeat") {
+        result.sampler.wrap = oglplus::TextureWrap::Repeat;
     }
 
-};
 
-Input::Pointer Input::load(const QVariant& v) {
-    auto vmap = v.toMap();
-    auto ctype = typeForString(vmap["ctype"].toString());
-    switch (ctype) {
-    case InputType::TEXTURE:
-        return std::make_shared<TextureInput>(vmap);
-    case InputType::CUBEMAP:
-        return std::make_shared<CubemapInput>(vmap);
-    default:
-        break;
+    return std::make_shared<Input>(result);
+}
+
+
+void Input::bind() {
+    if (texture && channel != -1) {
+        using namespace oglplus;
+        Texture::Active(channel);
+        texture->Bind(target);
+        Texture::WrapS(target, sampler.wrap);
+        Texture::WrapT(target, sampler.wrap);
+        Texture::WrapR(target, sampler.wrap);
+        Texture::MinFilter(target, sampler.minFilter);
+        Texture::MagFilter(target, sampler.magFilter);
     }
-    return Input::Pointer();
 }

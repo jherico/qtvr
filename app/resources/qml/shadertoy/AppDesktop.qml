@@ -13,8 +13,8 @@ Desktop {
     property var cursorPosition;
 
     onCursorPositionChanged: {
-        cursor.x = cursorPosition.x;
-        cursor.y = cursorPosition.y;
+//        cursor.x = cursorPosition.x;
+//        cursor.y = cursorPosition.y;
     }
 
     signal loadShader(string shaderId);
@@ -30,20 +30,20 @@ Desktop {
         onClicked: desktop.toggleMenu(Qt.vector2d(mouseX, mouseY));
     }
 
-    FontAwesome {
-        z: 10000
-        id: cursor
-        text: "\uf245"
-        size: 24
-        FontAwesome {
-            text: "\uf245"
-            color: "white"
-            size: parent.size * 0.7
-            x: 2
-            y: 4
-        }
+//    FontAwesome {
+//        z: 10000
+//        id: cursor
+//        text: "\uf245"
+//        size: 24
+//        FontAwesome {
+//            text: "\uf245"
+//            color: "white"
+//            size: parent.size * 0.7
+//            x: 2
+//            y: 4
+//        }
 
-    }
+//    }
 
     function setDisplayPlugins(plugins) {
         rootMenu.setDisplayPlugins(menu)
