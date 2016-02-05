@@ -24,8 +24,8 @@ limitations under the License.
 class ShaderModel : public QAbstractListModel {
 public:
     enum ShaderRoles {
-        NameRole = Qt::UserRole + 1,
-        IdRole
+        IdRole = Qt::UserRole + 1,
+        ShaderRole
     };
 
 

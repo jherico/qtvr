@@ -21,21 +21,20 @@ limitations under the License.
 #include <QDebug>
 
 ShaderModel::ShaderModel() {
-    _cache = new Cache("C:/Users/austi/git/shadertoys/");
+    _cache = new Cache("C:/Users/brad/git/shadertoys/");
 }
 
 int ShaderModel::rowCount(const QModelIndex & parent) const {
-    return _cache->_shaderIds.size();
+    return _cache->_shaders.size();
 }
 
 QVariant ShaderModel::data(const QModelIndex & index, int role) const {
-    auto shader = _cache->_shaders[_cache->_shaderIds[index.row()]];
-    
+    auto shader = _cache->_shaders[index.row()];
     switch (role) {
-    case NameRole:
-        return shader.id; 
     case IdRole:
-        return shader.id;
+        return shader->id;
+    case ShaderRole:
+        return QVariant::fromValue(shader);
     default:
         qDebug() << "Huh?";
     }
@@ -44,7 +43,7 @@ QVariant ShaderModel::data(const QModelIndex & index, int role) const {
 
 QHash<int, QByteArray> ShaderModel::roleNames() const {
     QHash<int, QByteArray> roles;
-    roles[NameRole] = "name";
-    roles[IdRole] = "shaderId";
+    roles[IdRole] = "modelShaderId";
+    roles[ShaderRole] = "modelShader";
     return roles;
 }

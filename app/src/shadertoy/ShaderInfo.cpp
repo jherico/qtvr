@@ -20,6 +20,7 @@ limitations under the License.
 #include "ShaderInfo.h"
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QVariant>
 
 
 bool ShaderInfo::parse(const QJsonValue& shaderInfo) {

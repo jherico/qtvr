@@ -28,40 +28,43 @@ Cache::Cache(const QString& basePath, QObject* parent) : QObject(parent), _baseP
     auto jsonIds = doc.object().value("Results").toArray();
     for (auto jsonId : jsonIds) {
         auto id = jsonId.toString();
-        Item item(id);
-        auto shader = Shader::read(basePath + "/" + id + ".json");
-        if (item.load(basePath)) {
-            _shaders.insert(id, item);
-            _shaderIds.push_back(id);
+        auto doc = fromFile(basePath + "/" + id + ".json");
+        auto shader = new Shader(this);
+        shader->id = id;
+        if (!shader->parse(doc.object().value("Shader"))) {
+            delete shader;
+            continue;
         }
+        _shaders.push_back(shader);
+        _shadersById[id] = shader;
     }
-    _sortedIds[""] = _shaders.keys();
+
+    _sortedIds[""] = _shadersById.keys();
     qDebug() << "Loaded " << _shaders.size() << "Shader IDs";
 }
 
 QStringList Cache::fetchShaderList() const {
-    return _shaders.keys();
+    return _shadersById.keys();
 }
 
 QVariant Cache::fetchShader(const QString& shaderId) const  {
-    if (!_shaders.contains(shaderId)) {
+    if (!_shadersById.contains(shaderId)) {
         qDebug() << "No such shader found";
         return QVariant();
     }
-    return _shaders[shaderId].shader;
+    return QVariant::fromValue(_shadersById[shaderId]);
 }
 
  QVariant Cache::fetchShaderInfo(const QString& shaderId) const  {
-    if (!_shaders.contains(shaderId)) {
+     if (!_shadersById.contains(shaderId)) {
         qDebug() << "No such shader found";
         return QVariant();
     }
-    return _shaders[shaderId].info;
+     return QVariant::fromValue(_shadersById[shaderId]->info);
 }
 
  QStringList Cache::queryShaders(const QString& query, const QVariantMap& parameters) const {
     qDebug() << "Queried for " << query << " and parameters " << parameters;
-
     QString sort = parameters["sort"].toString();
     if (!_sortedIds.contains(sort)) {
         sort = "";
@@ -70,19 +73,19 @@ QVariant Cache::fetchShader(const QString& shaderId) const  {
     qDebug() << "Starting size " << keys.size() << " items";
 
     auto forwardIterator = keys.begin();
-    const QString filter = parameters["filter"].toString();
-    if (!filter.isEmpty() && filter != "none") {
-        forwardIterator = std::remove_if(forwardIterator, keys.end(), [&](const QString& shaderId){
-            return _shaders[shaderId].matchFilter(filter);
-        });
-    }
+    //const QString filter = parameters["filter"].toString();
+    //if (!filter.isEmpty() && filter != "none") {
+    //    forwardIterator = std::remove_if(forwardIterator, keys.end(), [&](const QString& shaderId){
+    //        return _shaders[shaderId].matchFilter(filter);
+    //    });
+    //}
 
-    if (!query.isEmpty()) {
-        QRegularExpression queryRe("\\b" + query, QRegularExpression::CaseInsensitiveOption);
-        forwardIterator = std::remove_if(forwardIterator, keys.end(), [&](const QString& shaderId){
-            return _shaders[shaderId].matchQuery(queryRe);
-        });
-    }
+    //if (!query.isEmpty()) {
+    //    QRegularExpression queryRe("\\b" + query, QRegularExpression::CaseInsensitiveOption);
+    //    forwardIterator = std::remove_if(forwardIterator, keys.end(), [&](const QString& shaderId){
+    //        return _shaders[shaderId].matchQuery(queryRe);
+    //    });
+    //}
 
     const int max = parameters["num"].toInt();
 

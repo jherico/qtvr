@@ -28,9 +28,9 @@ limitations under the License.
 class QJsonValue;
 
 class Shader : public QObject {
-    Q_OBJECT
-    Q_PROPERTY(ShaderInfo* info MEMBER info);
-    Q_PROPERTY(QQmlListProperty<Renderpass> renderpass READ renderpass)
+    Q_OBJECT;
+    Q_PROPERTY(ShaderInfo* info MEMBER info CONSTANT);
+    Q_PROPERTY(QQmlListProperty<Renderpass> renderpass READ renderpass CONSTANT);
 public:
     Shader(QObject* parent = nullptr) : QObject(parent) {}
     ShaderInfo* info{ nullptr };

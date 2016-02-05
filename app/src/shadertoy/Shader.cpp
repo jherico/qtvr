@@ -45,7 +45,7 @@ bool Shader::parse(const QJsonValue& shader) {
     if (!shaderObject.value("info").isObject() || !shaderObject.value("renderpass").isArray()) {
         return false;
     }
-
+    
     info = new ShaderInfo(this);
     if (!info->parse(shaderObject.value("info"))) {
         return false;

@@ -18,6 +18,104 @@ limitations under the License.
 ************************************************************************************/
 
 #include "Input.h"
+#include <QJsonObject>
+#include <QJsonArray>
+
+bool fromJsonValue(const QJsonValue& value, Input::Type& type) {
+    if (!value.isString()) {
+        return false;
+    }
+
+    auto str = value.toString();
+    if (str == "texture") {
+        type = Input::TEXTURE;
+    } else if (str == "cubemap") {
+        type = Input::CUBEMAP;
+    } else if (str == "video") {
+        type = Input::VIDEO;
+    } else if (str == "music") {
+        type = Input::AUDIO;
+    } else if (str == "webcam") {
+        type = Input::WEBCAM;
+    } else if (str == "musicstream") {
+        type = Input::SOUNDCLOUD;
+    } else if (str == "keyboard") {
+        type = Input::KEYBOARD;
+    } else if (str == "mic") {
+        type = Input::MIC;
+    } else if (str == "buffer") {
+        type = Input::BUFFER;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool fromJsonValue(const QJsonValue& value, Input::Wrap& wrap) {
+    if (!value.isString()) {
+        return false;
+    }
+
+    auto str = value.toString();
+    if (str == "clamp") {
+        wrap = Input::CLAMP;
+    } else if (str == "repeat") {
+        wrap = Input::REPEAT;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool fromJsonValue(const QJsonValue& value, Input::Filter& filter) {
+    if (!value.isString()) {
+        return false;
+    }
+
+    auto str = value.toString();
+    if (str == "nearest") {
+        filter = Input::NEAREST;
+    } else if (str == "linear") {
+        filter = Input::LINEAR;
+    } else if (str == "mipmap") {
+        filter = Input::MIPMAP;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool Input::parse(const QJsonValue& input) {
+    if (!input.isObject()) {
+        return false;
+    }
+
+    auto inputObject = input.toObject();
+
+    src = inputObject.value("src").toString();
+    channel = inputObject.value("channel").toInt();
+    if (!fromJsonValue(inputObject.value("ctype"), ctype)) {
+        return false;
+    }
+
+    auto samplerValue = inputObject.value("sampler");
+    if (!samplerValue.isObject()) {
+        return false;
+    }
+
+    auto samplerObject = samplerValue.toObject();
+    if (!fromJsonValue(samplerObject.value("wrap"), wrap)) {
+        return false;
+    }
+    if (!fromJsonValue(samplerObject.value("filter"), filter)) {
+        return false;
+    }
+
+    vflip = samplerObject.value("vflip").toBool();
+    srgb = samplerObject.value("srgb").toBool();
+
+    return true;
+}
 
 void initTextureCache() {
 }

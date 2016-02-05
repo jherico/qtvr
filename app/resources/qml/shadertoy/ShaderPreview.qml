@@ -13,49 +13,35 @@ Rectangle {
     radius: 4
 
     property var shaderId;
-    property var shaderInfo;
-
-    Timer {
-        id: refreshTimer
-        interval: Math.random() * 100 + 50;
-        repeat: false
-        running: false
-        onTriggered: shadertoy.api.fetchShaderInfo(shaderId, function(result){
-            if (!root || !shaderId) { return; }
-            shaderInfo = result;
-        });
-    }
-
-    Component.onCompleted: refreshTimer.start()
-
+    property var shader;
 
     Text {
         id: label
         anchors { left: parent.left; top: parent.top; margins: 4; leftMargin: 8}
         font.pointSize: 12
         font.bold: true
-        text: shaderInfo ? shaderInfo.name : shaderId
+        text: shader.info.name
     }
 
     Image {
         id: image
-        visible: shaderInfo ? true : false
         anchors { left: parent.left; top: label.bottom; margins: 8 }
         width: 256; height: width / 16 * 9
         fillMode: Image.PreserveAspectFit
-        source: "https://www.shadertoy.com/media/shaders/" + shaderId + ".jpg"
+        source: "https://www.shadertoy.com/media/shaders/" + root.shaderId + ".jpg"
         //source: "../../shadertoys/" + shaderId + ".jpg"
+
+        BusyIndicator {
+            anchors.centerIn: parent
+            visible: image.status != Image.Ready
+        }
     }
 
 
     ShaderInfo {
         id: shaderInfoBox
-        shaderInfo: root.shaderInfo
-        visible: root.shaderInfo ? true : false;
+        shaderInfo: root.shader.info
         anchors { top: image.top; bottom: image.bottom; left: image.right; leftMargin: 4; right: parent.right; rightMargin: 8 }
     }
-    BusyIndicator {
-        anchors.centerIn: shaderInfoBox
-        visible: shaderInfo ? false : true
-    }
+
 }

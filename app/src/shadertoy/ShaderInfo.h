@@ -26,17 +26,17 @@ limitations under the License.
 class QJsonValue;
 
 class ShaderInfo : public QObject {
-    Q_OBJECT
-    Q_PROPERTY(QString id MEMBER id);
-    Q_PROPERTY(QString name MEMBER name);
-    Q_PROPERTY(QString username MEMBER username);
-    Q_PROPERTY(QString description MEMBER description);
-    Q_PROPERTY(QDateTime date MEMBER date);
-    Q_PROPERTY(QStringList tags MEMBER tags);
-    Q_PROPERTY(int viewed MEMBER viewed);
-    Q_PROPERTY(int likes MEMBER likes);
-    Q_PROPERTY(int flags MEMBER flags);
-    Q_PROPERTY(int published MEMBER published);
+    Q_OBJECT;
+    Q_PROPERTY(QString id MEMBER id CONSTANT);
+    Q_PROPERTY(QString name MEMBER name CONSTANT);
+    Q_PROPERTY(QString username MEMBER username CONSTANT);
+    Q_PROPERTY(QString description MEMBER description CONSTANT);
+    Q_PROPERTY(QDateTime date MEMBER date CONSTANT);
+    Q_PROPERTY(QStringList tags MEMBER tags CONSTANT);
+    Q_PROPERTY(int viewed MEMBER viewed CONSTANT);
+    Q_PROPERTY(int likes MEMBER likes CONSTANT);
+    Q_PROPERTY(int flags MEMBER flags CONSTANT);
+    Q_PROPERTY(int published MEMBER published CONSTANT);
 
 public:
     ShaderInfo(QObject* parent = nullptr) : QObject(parent) {}

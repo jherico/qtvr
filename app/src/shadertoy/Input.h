@@ -25,20 +25,22 @@ limitations under the License.
 
 #include "Shadertoy.h"
 
+class QJsonValue;
+
 struct Input : public QObject {
 public:
-    enum Type { NONE, TEXTURE, CUBEMAP, VIDEO, AUDIO, WEBCAM, SOUNDCLOUD, KEYBOARD, BUFFER };
+    enum Type { NONE, TEXTURE, CUBEMAP, VIDEO, AUDIO, WEBCAM, SOUNDCLOUD, MIC, KEYBOARD, BUFFER };
     enum Filter { NEAREST, LINEAR, MIPMAP };
     enum Wrap { CLAMP, REPEAT };
 
     Q_OBJECT
-    Q_PROPERTY(QString src MEMBER src)
-    Q_PROPERTY(int channel MEMBER channel)
-    Q_PROPERTY(Type ctype MEMBER ctype)
-    Q_PROPERTY(Wrap wrap MEMBER wrap)
-    Q_PROPERTY(bool vflip MEMBER vflip)
-    Q_PROPERTY(Filter filter MEMBER filter)
-    Q_PROPERTY(bool srgb MEMBER srgb)
+    Q_PROPERTY(QString src MEMBER src CONSTANT)
+    Q_PROPERTY(int channel MEMBER channel CONSTANT)
+    Q_PROPERTY(Type ctype MEMBER ctype CONSTANT)
+    Q_PROPERTY(Wrap wrap MEMBER wrap CONSTANT)
+    Q_PROPERTY(bool vflip MEMBER vflip CONSTANT)
+    Q_PROPERTY(Filter filter MEMBER filter CONSTANT)
+    Q_PROPERTY(bool srgb MEMBER srgb CONSTANT)
 
     Q_ENUMS(Type)
     Q_ENUMS(Filter)
@@ -54,6 +56,7 @@ public:
     Filter filter{ NEAREST };
     bool srgb{ false };
 
+    bool parse(const QJsonValue& renderpass);
 
     //struct {
     //    oglplus::TextureMinFilter minFilter{ oglplus::TextureMinFilter::Nearest };

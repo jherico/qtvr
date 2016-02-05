@@ -6,6 +6,8 @@
 #include <QtCore/QVariant>
 #include <QtCore/QSet>
 
+#include "Shader.h"
+
 class Cache : public QObject {
     Q_OBJECT
 public:
@@ -35,8 +37,8 @@ public:
     };
 
     const QString _basePath;
-    QList<QString> _shaderIds;
-    QHash<QString, Item> _shaders;
+    QList<Shader*> _shaders;
+    QHash<QString, Shader*> _shadersById;
     QHash<QString, QStringList> _sortedIds;
 };
 

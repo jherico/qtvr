@@ -110,10 +110,22 @@ Window {
                 id: flowContainer
 
                 ListView {
+                    id: flow
                     model: shaderModel
-                    delegate: Text {
-                        text: name
+                    delegate: ShaderPreview {
+                        width: flow.width
+                        shader: modelShader
+                        shaderId: modelShaderId
+                        Component.onCompleted: console.log("Shader " + shader + " shader id " + shaderId);
+                        MouseArea {
+                            anchors.fill: parent;
+                            onDoubleClicked: {
+                                root.selectedShader(parent.shaderId);
+                                root.visible = false;
+                            }
+                        }
                     }
+
                 }
 
 /*
@@ -123,16 +135,6 @@ Window {
                     width: flowContainer.width * 0.98;
                     Component {
                         id: shaderPreviewBuilder;
-                        ShaderPreview {
-                            width: flow.width
-                            MouseArea {
-                                anchors.fill: parent;
-                                onDoubleClicked: {
-                                    root.selectedShader(parent.shaderId);
-                                    root.visible = false;
-                                }
-                            }
-                        }
                     }
                     property var shaderChildren: [];
 

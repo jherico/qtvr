@@ -30,9 +30,9 @@ public:
 
 private:
     Q_OBJECT
-    Q_PROPERTY(QString code MEMBER code)
-    Q_PROPERTY(Type type MEMBER type)
-    Q_PROPERTY(QQmlListProperty<Input> inputs READ inputs)
+    Q_PROPERTY(QString code MEMBER code CONSTANT)
+    Q_PROPERTY(Type type MEMBER type CONSTANT)
+    Q_PROPERTY(QQmlListProperty<Input> inputs READ inputs CONSTANT)
     Q_ENUMS(Type)
 public:
     Renderpass(QObject* parent = nullptr) : QObject(parent) {}

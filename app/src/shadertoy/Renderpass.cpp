@@ -26,6 +26,35 @@ bool Renderpass::parse(const QJsonValue& renderpass) {
         return false;
     }
 
+    auto renderpassObject = renderpass.toObject();
+    code = renderpassObject.value("code").toString();
+    
+    auto typeValue = renderpassObject.value("type").toString();
+    if (typeValue == "image") {
+        type = IMAGE;
+    } else if (typeValue == "buffer") {
+        type = BUFFER;
+    } else if (typeValue == "sound") {
+        type = SOUND;
+    } else {
+        return false;
+    }
 
+    auto inputsValue = renderpassObject.value("inputs");
+    if (!inputsValue.isArray()) {
+        return false;
+    }
+
+    for (auto inputValue : inputsValue.toArray()) {
+        if (!inputValue.isObject()) {
+            return false;
+        }
+
+        auto input = new Input(this);
+        _inputs.push_back(input);
+        if (!input->parse(inputValue)) {
+            return false;
+        }
+    }
     return true;
 }
