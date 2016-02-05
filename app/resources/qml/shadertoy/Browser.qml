@@ -109,7 +109,14 @@ Window {
                 anchors { top: searchField.bottom; topMargin: 8; bottom: parent.bottom; left: parent.left; right: parent.right }
                 id: flowContainer
 
+                ListView {
+                    model: shaderModel
+                    delegate: Text {
+                        text: name
+                    }
+                }
 
+/*
                 Column {
                     id: flow;
                     spacing: 4;
@@ -146,6 +153,8 @@ Window {
                         }
                     }
                 }
+
+                */
             }
         }
     }

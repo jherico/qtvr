@@ -48,11 +48,11 @@ void Renderer::updateShaderSource(const QString& source) {
 
 }
 void Renderer::updateShaderInput(int channel, const QVariant& input) {
-    if (!input.isValid()) {
-        inputs[channel] = Input::Pointer();
-        return;
-    }
-    inputs[channel] = getTexture(input.toMap());
+    //if (!input.isValid()) {
+    //    inputs[channel] = Input::Pointer();
+    //    return;
+    //}
+    //inputs[channel] = getTexture(input.toMap());
 }
 
 void Renderer::updateShader(const QVariant& shader) {
@@ -82,44 +82,46 @@ void Renderer::updateUniforms() {
     shadertoyProgram->Bind();
     // UNIFORM_DATE;
     for (int i = 0; i < 4; ++i) {
-        const char * uniformName = shadertoy::UNIFORM_CHANNELS[i];
+        const char * uniformName = Shadertoy::UNIFORM_CHANNELS[i];
         if (activeUniforms.count(uniformName)) {
             QOpenGLContext::currentContext()->functions()->glUniform1i(activeUniforms[uniformName], i);
         }
-        if (inputs[i] && inputs[i]->texture) {
-            if (activeUniforms.count(UNIFORM_CHANNEL_RESOLUTIONS[i])) {
-                Uniform<vec3>(*shadertoyProgram, UNIFORM_CHANNEL_RESOLUTIONS[i]).Set(inputs[i]->resolution);
-            }
-        }
+        //if (inputs[i] && inputs[i]->texture) {
+        //    if (activeUniforms.count(Shadertoy::UNIFORM_CHANNEL_RESOLUTIONS[i])) {
+        //        Uniform<vec3>(*shadertoyProgram, Shadertoy::UNIFORM_CHANNEL_RESOLUTIONS[i]).Set(inputs[i]->resolution);
+        //    }
+        //}
     }
 
     uniformLambdas.clear();
-    if (activeUniforms.count(UNIFORM_GLOBALTIME)) {
+    if (activeUniforms.count(Shadertoy::UNIFORM_GLOBALTIME)) {
         uniformLambdas.push_back([=] {
-            Uniform<GLfloat>(*shadertoyProgram, UNIFORM_GLOBALTIME).Set(secTimestampNow() - startTime);
+            Uniform<GLfloat>(*shadertoyProgram, Shadertoy::UNIFORM_GLOBALTIME).Set(secTimestampNow() - startTime);
         });
     }
 
-    if (activeUniforms.count(UNIFORM_RESOLUTION)) {
+    if (activeUniforms.count(Shadertoy::UNIFORM_RESOLUTION)) {
         uniformLambdas.push_back([=] {
             vec3 res = vec3(resolution, 0);
-            Uniform<vec3>(*shadertoyProgram, UNIFORM_RESOLUTION).Set(res);
+            Uniform<vec3>(*shadertoyProgram, Shadertoy::UNIFORM_RESOLUTION).Set(res);
         });
     }
 
-    if (activeUniforms.count(shadertoy::UNIFORM_POSITION)) {
+    if (activeUniforms.count(Shadertoy::UNIFORM_POSITION)) {
         uniformLambdas.push_back([=] {
-            Uniform<vec3>(*shadertoyProgram, shadertoy::UNIFORM_POSITION).Set(position);
+            Uniform<vec3>(*shadertoyProgram, Shadertoy::UNIFORM_POSITION).Set(position);
         });
     }
 
-    for (int i = 0; i < 4; ++i) {
-        if (activeUniforms.count(UNIFORM_CHANNELS[i]) && inputs[i]) {
-            uniformLambdas.push_back([=] {
-                inputs[i]->bind(i);
-            });
-        }
-    }
+    //for (int i = 0; i < 4; ++i) {
+    //    if (activeUniforms.count(Shadertoy::UNIFORM_CHANNELS[i]) && inputs[i]) {
+    //        uniformLambdas.push_back([=] {
+    //            if (inputs[i]) {
+    //                inputs[i]->bind(i);
+    //            }
+    //        });
+    //    }
+    //}
 }
 
 //void mainImage( out vec4 fragColor, in vec2 fragCoord );
@@ -136,6 +138,22 @@ void main() {
 }
 )SHADER";
 
+const char* const SHADER_HEADER = "#version 330\n"
+"uniform vec3      iResolution;           // viewport resolution (in pixels)\n"
+"uniform float     iGlobalTime;           // shader playback time (in seconds)\n"
+"uniform float     iChannelTime[4];       // channel playback time (in seconds)\n"
+"uniform vec3      iChannelResolution[4]; // channel resolution (in pixels)\n"
+"uniform vec4      iMouse;                // mouse pixel coords. xy: current (if MLB down), zw: click\n"
+"uniform vec4      iDate;                 // (year, month, day, time in seconds)\n"
+"uniform float     iSampleRate;           // sound sample rate (i.e., 44100)\n"
+"uniform vec3      iPos; // Head position\n"
+"in vec3 iDir; // Direction from viewer\n"
+"out vec4 FragColor;\n";
+
+const char* const LINE_NUMBER_HEADER =
+"#line 1\n";
+
+
 bool Renderer::tryToBuild() {
     try {
         position = vec3();
@@ -146,18 +164,18 @@ bool Renderer::tryToBuild() {
             vertexShader->Compile();
         }
 
-        QString header = shadertoy::SHADER_HEADER;
-        for (int i = 0; i < 4; ++i) {
-            auto input = inputs[i];
-            if (!input) {
-                continue;
-            }
-            QString line; line.sprintf("uniform sampler%s iChannel%d;\n",
-                input->target == Texture::Target::CubeMap ? "Cube" : "2D", i);
-            header += line;
-        }
+        QString header = SHADER_HEADER;
+        //for (int i = 0; i < 4; ++i) {
+        //    auto input = inputs[i];
+        //    if (!input) {
+        //        continue;
+        //    }
+        //    QString line; line.sprintf("uniform sampler%s iChannel%d;\n",
+        //        input->target == Texture::Target::CubeMap ? "Cube" : "2D", i);
+        //    header += line;
+        //}
         
-        header += shadertoy::LINE_NUMBER_HEADER;
+        header += LINE_NUMBER_HEADER;
         FragmentShaderPtr newFragmentShader(new FragmentShader());
         QString source = _currentShader;
         source.

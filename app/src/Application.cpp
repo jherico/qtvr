@@ -17,12 +17,12 @@
 #include <QtQml/QQmlNetworkAccessManagerFactory>
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlContext>
-Cache* _cache;
 
 #include <FileUtils.h>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonValue>
 
+#include "shadertoy/Shader.h"
 
 //const QString SHADERS_DIR = "C:/Users/austi/git/shadertoys/";
 //for (auto shaderFile : QDir(SHADERS_DIR).entryList(QStringList(QString("*.json")))) {
@@ -42,8 +42,8 @@ Application::Application(int& argc, char** argv) : PluginApplication(argc, argv)
     Q_INIT_RESOURCE(ShadertoyVR);
 
 
-    getWindow()->setGeometry(100, -980, 1280, 720);
-    //getWindow()->setGeometry(100, 100, 1280, 720);
+    //getWindow()->setGeometry(100, -980, 1280, 720);
+    getWindow()->setGeometry(100, 100, 1280, 720);
 
 //    setOverrideCursor(Qt::BlankCursor);
     initializeUI(QUrl::fromLocalFile("shadertoy/AppDesktop.qml"));
@@ -54,11 +54,17 @@ Application::Application(int& argc, char** argv) : PluginApplication(argc, argv)
 }
 
 void Application::initializeUI(const QUrl& desktopUrl) {
-    _cache = new Cache("C:/Users/brad/git/shadertoys/");
+    qmlRegisterType<Input>("Shadertoy", 1, 0, "Input");
+    qmlRegisterType<Renderpass>("Shadertoy", 1, 0, "Renderpass");
+    qmlRegisterType<ShaderInfo>("Shadertoy", 1, 0, "ShaderInfo");
+    qmlRegisterType<Shader>("Shadertoy", 1, 0, "Shader");
     PluginApplication::initializeUI(desktopUrl);
+
+    _model = new ShaderModel();
     getActiveDisplayPlugin()->idle();
     getOffscreenUi()->setRootContextProperty("renderer", &_renderer);
-    getOffscreenUi()->setRootContextProperty("shadertoyCache", _cache);
+    getOffscreenUi()->setRootContextProperty("shaderModel", _model);
+    getOffscreenUi()->setRootContextProperty("shadertoyCache", _model->_cache);
 }
 
 void Application::loadShader(const QString& shaderId) {

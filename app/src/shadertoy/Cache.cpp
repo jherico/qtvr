@@ -7,6 +7,7 @@
 #include <QtCore/QJsonValue>
 #include <QtCore/QFile>
 #include <QtCore/QDebug>
+#include "Shader.h"
 
 QJsonDocument fromFile(const QString& filePath) {
     QFile file(filePath);
@@ -28,8 +29,10 @@ Cache::Cache(const QString& basePath, QObject* parent) : QObject(parent), _baseP
     for (auto jsonId : jsonIds) {
         auto id = jsonId.toString();
         Item item(id);
+        auto shader = Shader::read(basePath + "/" + id + ".json");
         if (item.load(basePath)) {
             _shaders.insert(id, item);
+            _shaderIds.push_back(id);
         }
     }
     _sortedIds[""] = _shaders.keys();

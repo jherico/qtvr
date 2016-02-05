@@ -88,7 +88,7 @@ namespace shadertoy {
         //TextureMap textureCache;
 
         // The currently active input channels
-        Input::Pointer inputs[4];
+        //Input::Pointer inputs[4];
 
         //// The shadertoy rendering resolution scale.  1.0 means full resolution
         //// as defined by the Oculus SDK as the ideal offscreen resolution

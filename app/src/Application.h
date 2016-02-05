@@ -2,6 +2,7 @@
 
 #include "shadertoy/Shadertoy.h"
 #include "shadertoy/Renderer.h"
+#include "shadertoy/ShaderModel.h"
 
 class Application : public PluginApplication {
     Q_OBJECT
@@ -20,4 +21,5 @@ protected slots:
 
 private:
     shadertoy::Renderer _renderer;
+    ShaderModel* _model{ nullptr };
 };

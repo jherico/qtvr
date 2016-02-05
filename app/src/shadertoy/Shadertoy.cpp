@@ -52,73 +52,29 @@ QJsonValue path(const QJsonValue & parent, std::initializer_list<QVariant> eleme
     return current;
 }
 
+const char* const Shadertoy::UNIFORM_RESOLUTION = "iResolution";
+const char* const Shadertoy::UNIFORM_GLOBALTIME = "iGlobalTime";
+const char* const Shadertoy::UNIFORM_CHANNEL_TIME = "iChannelTime";
+const char* const Shadertoy::UNIFORM_CHANNEL_RESOLUTIONS[MAX_CHANNELS] = {
+    "iChannelResolution[0]",
+    "iChannelResolution[1]",
+    "iChannelResolution[2]",
+    "iChannelResolution[3]",
+};
 
-namespace shadertoy {
+const char* const Shadertoy::UNIFORM_CHANNEL_RESOLUTION = "iChannelResolution";
+const char* const Shadertoy::UNIFORM_MOUSE_COORDS = "iMouse";
+const char* const Shadertoy::UNIFORM_DATE = "iDate";
+const char* const Shadertoy::UNIFORM_SAMPLE_RATE = "iSampleRate";
+const char* const Shadertoy::UNIFORM_POSITION = "iPos";
+const char* const Shadertoy::UNIFORM_CHANNELS[MAX_CHANNELS] = {
+    "iChannel0",
+    "iChannel1",
+    "iChannel2",
+    "iChannel3",
+};
 
-    const char* const UNIFORM_RESOLUTION = "iResolution";
-    const char* const UNIFORM_GLOBALTIME = "iGlobalTime";
-    const char* const UNIFORM_CHANNEL_TIME = "iChannelTime";
-    const char* const UNIFORM_CHANNEL_RESOLUTIONS[MAX_CHANNELS] = {
-        "iChannelResolution[0]",
-        "iChannelResolution[1]",
-        "iChannelResolution[2]",
-        "iChannelResolution[3]",
-    };
 
-    const char* const UNIFORM_CHANNEL_RESOLUTION = "iChannelResolution";
-    const char* const UNIFORM_MOUSE_COORDS = "iMouse";
-    const char* const UNIFORM_DATE = "iDate";
-    const char* const UNIFORM_SAMPLE_RATE = "iSampleRate";
-    const char* const UNIFORM_POSITION = "iPos";
-    const char* const UNIFORM_CHANNELS[MAX_CHANNELS] = {
-        "iChannel0",
-        "iChannel1",
-        "iChannel2",
-        "iChannel3",
-    };
-
-    const char* const SHADER_HEADER = "#version 330\n"
-        "uniform vec3      iResolution;           // viewport resolution (in pixels)\n"
-        "uniform float     iGlobalTime;           // shader playback time (in seconds)\n"
-        "uniform float     iChannelTime[4];       // channel playback time (in seconds)\n"
-        "uniform vec3      iChannelResolution[4]; // channel resolution (in pixels)\n"
-        "uniform vec4      iMouse;                // mouse pixel coords. xy: current (if MLB down), zw: click\n"
-        "uniform vec4      iDate;                 // (year, month, day, time in seconds)\n"
-        "uniform float     iSampleRate;           // sound sample rate (i.e., 44100)\n"
-        "uniform vec3      iPos; // Head position\n"
-        "in vec3 iDir; // Direction from viewer\n"
-        "out vec4 FragColor;\n";
-
-    const char* const LINE_NUMBER_HEADER =
-        "#line 1\n";
-
-    const QStringList TEXTURES({
-        "/presets/tex00.jpg",
-        "/presets/tex01.jpg",
-        "/presets/tex02.jpg",
-        "/presets/tex03.jpg",
-        "/presets/tex04.jpg",
-        "/presets/tex05.jpg",
-        "/presets/tex06.jpg",
-        "/presets/tex07.jpg",
-        "/presets/tex08.jpg",
-        "/presets/tex09.jpg",
-        "/presets/tex10.png",
-        "/presets/tex11.png",
-        "/presets/tex12.png",
-        "/presets/tex14.png",
-        "/presets/tex15.png",
-        "/presets/tex16.png"
-    });
-
-    const QStringList CUBEMAPS({
-        "/presets/cube00_%1.jpg",
-        "/presets/cube01_%1.png",
-        "/presets/cube02_%1.jpg",
-        "/presets/cube03_%1.png",
-        "/presets/cube04_%1.png",
-        "/presets/cube05_%1.png",
-    });
 
     //static const char* const CHANNEL_REGEX = "(\\w+)(\\d{2})";
     //static const char* const XML_ROOT_NAME = "shadertoy";
@@ -286,4 +242,3 @@ namespace shadertoy {
     //    file.write(doc.toByteArray());
     //    file.close();
     //}
-}

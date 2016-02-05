@@ -16,7 +16,7 @@ public:
     Q_INVOKABLE QVariant fetchShaderInfo(const QString& shaderId) const;
     Q_INVOKABLE QStringList queryShaders(const QString& query, const QVariantMap& parameters) const;
 
-private:
+public:
 
     struct Item {
         Item(const QString& id = "");
@@ -35,6 +35,7 @@ private:
     };
 
     const QString _basePath;
+    QList<QString> _shaderIds;
     QHash<QString, Item> _shaders;
     QHash<QString, QStringList> _sortedIds;
 };

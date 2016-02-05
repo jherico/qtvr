@@ -18,31 +18,26 @@ limitations under the License.
 ************************************************************************************/
 
 #pragma once
-
-#include <QtCore/QStringList>
 #include <QtCore/QObject>
+#include <QQmlListProperty>
 
-class Shadertoy : public QObject{
+#include "Shadertoy.h"
+#include "ShaderInfo.h"
+#include "Renderpass.h"
+
+class QJsonValue;
+
+class Shader : public QObject {
     Q_OBJECT
-    Q_ENUMS(InputType)
-    Q_ENUMS(Filter)
-    Q_ENUMS(Wrap)
+    Q_PROPERTY(ShaderInfo* info MEMBER info);
+    Q_PROPERTY(QQmlListProperty<Renderpass> renderpass READ renderpass)
 public:
-    enum InputType { NONE, TEXTURE, CUBEMAP, VIDEO, AUDIO, WEBCAM, SOUNDCLOUD, KEYBOARD, BUFFER };
-    enum Filter { NEAREST, LINEAR, MIPMAP };
-    enum Wrap { CLAMP, REPEAT };
+    Shader(QObject* parent = nullptr) : QObject(parent) {}
+    ShaderInfo* info{ nullptr };
+    QQmlListProperty<Renderpass> renderpass();
 
-    static const int MAX_CHANNELS = 4;
-    static const char* const UNIFORM_RESOLUTION;
-    static const char* const UNIFORM_GLOBALTIME;
-    static const char* const UNIFORM_CHANNEL_TIME;
-    static const char* const UNIFORM_CHANNEL_RESOLUTIONS[MAX_CHANNELS];
-    static const char* const UNIFORM_CHANNEL_RESOLUTION;
-    static const char* const UNIFORM_MOUSE_COORDS;
-    static const char* const UNIFORM_DATE;
-    static const char* const UNIFORM_SAMPLE_RATE;
-    static const char* const UNIFORM_POSITION;
-    static const char* const UNIFORM_CHANNELS[MAX_CHANNELS];
-
+    static Shader* read(const QString& file);
+    bool parse(const QJsonValue& json);
+private:
+    QList<Renderpass*> _renderpass;
 };
-
