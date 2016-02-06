@@ -38,6 +38,15 @@ protected:
     OffscreenUi* _offscreenUi { nullptr };
     uint32_t _uiTexture { 0 };
     bool _reticleClickPressed { false };
+
+    // FIXME hack access to the internal share context for the Chromium helper
+    // Normally we'd want to use QWebEngine::initialize(), but we can't because 
+    // our primary context is a QGLWidget, which can't easily be initialized to share
+    // from a QOpenGLContext.
+    //
+    // So instead we create a new offscreen context to share with the QGLWidget,
+    // and manually set THAT to be the shared context for the Chromium helper
+    OffscreenGLCanvas* _chromiumShareContext { nullptr };
 };
 
 #if defined(qApp)

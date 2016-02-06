@@ -34,7 +34,6 @@ Window {
         searchField.text = query;
         query = Qt.binding(function() { return searchField.text });
         ready = true;
-        updateResults();
     }
 
     onCountChanged: updateResults();
@@ -63,11 +62,11 @@ Window {
                 id: searchField
                 anchors { top: parent.top; left: parent.left; right: queryParams.left; rightMargin: 16 }
                 placeholderText: "Search"
-                onTextChanged: refreshTimer.restart();
-                onAccepted: { refreshTimer.stop(); root.updateResults(); }
+                onTextChanged: { refreshTimer.interval = 1500;  refreshTimer.restart(); }
+                onAccepted: { refreshTimer.interval = 100;  refreshTimer.restart(); }
                 Timer {
                     id: refreshTimer
-                    interval: 500; repeat: false; running: false
+                    interval: 1500; repeat: false; running: false
                     onTriggered: updateResults();
                 }
             }
@@ -108,7 +107,6 @@ Window {
                 clip: true;
                 anchors { top: searchField.bottom; topMargin: 8; bottom: parent.bottom; left: parent.left; right: parent.right }
                 id: flowContainer
-
                 ListView {
                     id: flow
                     model: shaderModel
@@ -125,58 +123,27 @@ Window {
                             }
                         }
                     }
-
                 }
-
-/*
-                Column {
-                    id: flow;
-                    spacing: 4;
-                    width: flowContainer.width * 0.98;
-                    Component {
-                        id: shaderPreviewBuilder;
-                    }
-                    property var shaderChildren: [];
-
-                    function setShaders(shaderIds) {
-                        clearShaders();
-                        for (var i = 0; i < shaderIds.length; ++i) {
-                            shaderChildren.push(shaderPreviewBuilder.createObject(flow, { shaderId: shaderIds[i] }));
-                        }
-
-                    }
-
-                    function clearShaders() {
-                        while (shaderChildren.length) {
-                            var item = shaderChildren[0];
-                            shaderChildren.shift();
-                            item.parent = null;
-                            item.destroy();
-                        }
-                    }
-                }
-
-                */
             }
         }
     }
 
     function updateResults() {
+        console.log("Update results start");
         if (!ready) {
             return;
         }
-
-        console.log("Attempting to update results")
-        flow.clearShaders();
         var params = {};
         params["sort"] = sort;
         params["num"] = count;
         if (filter) { params["filter"] = filter }
         shadertoy.api.queryShaders(query, params, processResults);
-        console.log("Update results");
+        console.log("Update results end");
     }
 
     function processResults(shaderIds) {
-        flow.setShaders(shaderIds);
+        console.log("processResults start");
+        shaderModel.shaderIds = shaderIds || [];
+        console.log("processResults end");
     }
 }

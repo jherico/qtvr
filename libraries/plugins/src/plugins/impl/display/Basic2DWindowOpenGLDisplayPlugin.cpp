@@ -16,56 +16,8 @@
 
 const QString Basic2DWindowOpenGLDisplayPlugin::NAME("2D Display");
 
-static const QString FULLSCREEN = "Fullscreen";
-static const QString FRAMERATE = DisplayPlugin::MENU_PATH() + ">Framerate";
-static const QString FRAMERATE_UNLIMITED = "Unlimited";
-static const QString FRAMERATE_60 = "60";
-static const QString FRAMERATE_50 = "50";
-static const QString FRAMERATE_40 = "40";
-static const QString FRAMERATE_30 = "30";
-static const QString VSYNC_ON = "V-Sync On";
-
 const QString& Basic2DWindowOpenGLDisplayPlugin::getName() const {
     return NAME;
-}
-
-void Basic2DWindowOpenGLDisplayPlugin::activate() {
-    WindowOpenGLDisplayPlugin::activate();
-
-    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, MENU_PATH(), FULLSCREEN,
-    //    [this](bool clicked) {
-    //        if (clicked) {
-    //            _container->setFullscreen(getFullscreenTarget());
-    //        } else {
-    //            _container->unsetFullscreen();
-    //        }
-    //    }, true, false);
-    //_container->addMenu(FRAMERATE);
-    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_UNLIMITED,
-    //    [this](bool) { updateFramerate(); }, true, true, FRAMERATE);
-    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_60,
-    //    [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
-    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_50,
-    //    [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
-    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_40,
-    //    [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
-    //_container->addMenuItem(PluginType::DISPLAY_PLUGIN, FRAMERATE, FRAMERATE_30,
-    //    [this](bool) { updateFramerate(); }, true, false, FRAMERATE);
-
-    //// Vsync detection happens in the parent class activate, so we need to check after that
-    //if (_vsyncSupported) {
-    //    _container->addMenuItem(PluginType::DISPLAY_PLUGIN, MENU_PATH(), VSYNC_ON, [this](bool) {}, true, true);
-    //} 
-
-    updateFramerate();
-}
-
-void Basic2DWindowOpenGLDisplayPlugin::submitSceneTexture(uint32_t frameIndex, uint32_t sceneTexture, const glm::uvec2& sceneSize) {
-    //if (_vsyncAction) {
-    //    _wantVsync = _vsyncAction->isChecked();
-    //}
-
-    WindowOpenGLDisplayPlugin::submitSceneTexture(frameIndex, sceneTexture, sceneSize);
 }
 
 void Basic2DWindowOpenGLDisplayPlugin::internalPresent() {
@@ -74,39 +26,9 @@ void Basic2DWindowOpenGLDisplayPlugin::internalPresent() {
     }
     WindowOpenGLDisplayPlugin::internalPresent();
 }
-const uint32_t THROTTLED_FRAMERATE = 15;
-int Basic2DWindowOpenGLDisplayPlugin::getDesiredInterval() const {
-    static const int ULIMIITED_PAINT_TIMER_DELAY_MS = 1;
-    int result = ULIMIITED_PAINT_TIMER_DELAY_MS;
-    if (0 != _framerateTarget) {
-        result = MSECS_PER_SECOND / _framerateTarget;
-    } else if (_isThrottled) {
-        // This test wouldn't be necessary if we could depend on updateFramerate setting _framerateTarget.
-        // Alas, that gets complicated: isThrottled() is const and other stuff depends on it.
-        result = MSECS_PER_SECOND / THROTTLED_FRAMERATE;
-    }
-
-    return result;
-}
 
 bool Basic2DWindowOpenGLDisplayPlugin::isThrottled() const {
-    static const QString ThrottleFPSIfNotFocus = "Throttle FPS If Not Focus"; // FIXME - this value duplicated in Menu.h
-
-    bool shouldThrottle = false;
-    //bool shouldThrottle = (!qApp->isActive() && _container->isOptionChecked(ThrottleFPSIfNotFocus));
-    //
-    //if (_isThrottled != shouldThrottle) {
-    //    _isThrottled = shouldThrottle;
-    //    _timer.start(getDesiredInterval());
-    //}
-    
-    return shouldThrottle;
-}
-
-void Basic2DWindowOpenGLDisplayPlugin::updateFramerate() {
-    _framerateTarget = 0;
-    int newInterval = getDesiredInterval();
-    _timer.start(newInterval);
+    return !qApp->isActive();
 }
 
 // FIXME target the screen the window is currently on

@@ -8,58 +8,36 @@ QtObject {
 
     property bool offline: false
 
-    signal receivedShaderList(string shaderList)
-    signal receivedShader(string shaderList)
-
-    // FIXME persist to disk between sessions?
-    property var cache: { "__placeholder": null }
+    function fetchShaderInfo(shaderId, callback) {
+        fetchShader(shaderId, function(result) { callback(result.info) });
+    }
 
     function fetchShaderList(callback) {
         if (offline) {
-            callback(shadertoyCache.fetchShaderList());
+            callback(shadertoyCache.getShaderList());
             return;
         }
 
+        console.debug("Fetching all shader IDs");
         request("/shaders", {}, function(results) {
-            receivedShaderList(results);
+            shadertoyCache.setShaderList(results);
             callback(JSON.parse(results).Results);
         })
     }
 
-
-    function fetchShaderInfo(shaderId, callback, ignoreCache) {
-        if (offline) {
-            callback(shadertoyCache.fetchShaderInfo(shaderId));
-            return;
-        }
-
-        fetchShader(shaderId, function(result) {
-            callback(result.info)
-        }, ignoreCache);
-    }
-
     function fetchShader(shaderId, callback, ignoreCache) {
-        if (offline) {
-            console.log("Requested shader " + shaderId);
-            var result = shadertoyCache.fetchShader(shaderId);
-            console.log("Result " + result)
-            callback(result);
+        console.debug("Fetch shader called with ")
+        if (!offline && (ignoreCache || !shadertoyCache.hasShader(shaderId))) {
+            callback(shadertoyCache.getShader(shaderId));
             return;
         }
-
-        if (cache[shaderId] && !ignoreCache) {
-            console.log("Got cached data for " + shaderId);
-            callback(cache[shaderId]);
-            return;
-        }
-
-        request("/shaders/" + shaderId, {}, function(shaderInfo) {
-            console.log("Got network data for " + shaderId);
-            receivedShader(shaderInfo);
-            shaderInfo = JSON.parse(shaderInfo)
-            cache[shaderId] = shaderInfo.Shader;
-            callback(shaderInfo.Shader);
-        })
+        console.debug("Shader not found in cache, fetching " + shaderId);
+        request("/shaders/" + shaderId, {}, function(shaderJson) {
+            console.log("Got API response for shader " + shaderId);
+            var shader = shadertoyCache.setShader(shaderId, shaderJson);
+            console.log("Parsed shader is " + shader);
+            callback(shader);
+        });
     }
 
     // Sort
@@ -73,6 +51,7 @@ QtObject {
     // Query shaders with filters: "vr", "soundoutput", "soundinput", "webcam", "multipass", "musicstream" (by default, there is no filter)
     // https://www.shadertoy.com/api/v1/shaders/query/string?filter=vr&key=appkey
     function queryShaders(query, params, callback) {
+        console.log("Calling shader query " + params)
         if (!callback) {
             callback = params;
             params = {}
@@ -84,7 +63,9 @@ QtObject {
         }
 
         request("/shaders/query" + (query ? "/" + query : ""), callback ? params : {}, function(results) {
+            console.debug("Processing query results");
             var shaderList = JSON.parse(results).Results;
+            console.log(shaderList);
             (callback ? callback : params)(shaderList);
         });
     }
@@ -118,5 +99,6 @@ QtObject {
         };
         xhr.open('GET', url, true);
         xhr.send('');
+
     }
 }

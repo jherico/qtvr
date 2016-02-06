@@ -3,7 +3,7 @@
 Authors     :   Bradley Austin Davis <bdavis@saintandreas.org>
 Copyright   :   Copyright Bradley Austin Davis. All Rights reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License"];
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -18,28 +18,22 @@ limitations under the License.
 ************************************************************************************/
 
 #include "ShaderInfo.h"
-#include <QJsonObject>
-#include <QJsonArray>
 #include <QVariant>
 
 
-bool ShaderInfo::parse(const QJsonValue& shaderInfo) {
-    if (!shaderInfo.isObject()) {
-        return false;
-    }
-    auto shaderInfoObject = shaderInfo.toObject();
-    name = shaderInfoObject.value("name").toString();
-    username = shaderInfoObject.value("username").toString();
-    id = shaderInfoObject.value("id").toString();
-    auto dateTime = QString(shaderInfoObject.value("date").toString()).toInt();
+bool ShaderInfo::parse(const QVariant& var) {
+    auto varMap = var.toMap();
+    name = varMap["name"].toString();
+    username = varMap["username"].toString();
+    id = varMap["id"].toString();
+    auto dateTime = QString(varMap["date"].toString()).toInt();
     date = QDateTime::fromTime_t(dateTime);
-    viewed = shaderInfoObject.value("viewed").toInt();
-    description = shaderInfoObject.value("description").toString();
-    likes = shaderInfoObject.value("likes").toInt();
-    published = shaderInfoObject.value("published").toInt();
-    flags = shaderInfoObject.value("flags").toInt();
-    auto tagsArray = shaderInfoObject.value("tags").toArray();
-    for (auto tagValue : tagsArray) {
+    viewed = varMap["viewed"].toInt();
+    description = varMap["description"].toString();
+    likes = varMap["likes"].toInt();
+    published = varMap["published"].toInt();
+    flags = varMap["flags"].toInt();
+    for (auto tagValue : varMap["tags"].toList()) {
         tags.push_back(tagValue.toString());
     }
     return true;

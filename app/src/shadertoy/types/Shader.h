@@ -18,24 +18,22 @@ limitations under the License.
 ************************************************************************************/
 
 #pragma once
-#include <QAbstractListModel>
-#include "Cache.h"
+#include <QtCore/QObject>
+#include <QQmlListProperty>
 
-class ShaderModel : public QAbstractListModel {
-public:
-    enum ShaderRoles {
-        IdRole = Qt::UserRole + 1,
-        ShaderRole
-    };
+#include "ShaderInfo.h"
+#include "Renderpass.h"
 
+class QJsonValue;
 
-    Q_OBJECT
+class Shader : public QObject {
+    Q_OBJECT;
+    Q_PROPERTY(ShaderInfo* info MEMBER info CONSTANT);
+    Q_PROPERTY(QQmlListProperty<Renderpass> renderpass READ renderpass CONSTANT);
 public:
-    ShaderModel();
-protected:
-    int rowCount(const QModelIndex & parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const override;
-    QHash<int, QByteArray> roleNames() const override;
-public:
-    Cache* _cache{ nullptr };
+    Shader(QObject* parent = nullptr) : QObject(parent) {}
+    ShaderInfo* info{ nullptr };
+    QQmlListProperty<Renderpass> renderpass();
+    bool parse(const QVariant& var);
+    QList<Renderpass*> _renderpass;
 };

@@ -5,6 +5,7 @@ import "."
 
 Item {
     id: root
+    property string shaderId;
     property var shaderInfo;
     visible: shaderInfo ? true : false
     property string tags: "";

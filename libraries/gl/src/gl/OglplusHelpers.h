@@ -61,10 +61,10 @@ using UniformMap = std::map<std::string, uint32_t>;
 ProgramPtr loadDefaultShader();
 void compileProgram(ProgramPtr & result, const std::string& vs, const std::string& fs);
 ProgramPtr loadProgram(const QString & vsFile, const QString & fsFile);
-UniformMap getActiveUniforms(ProgramPtr & program);
+UniformMap getActiveUniforms(ProgramPtr& program);
 
-ShapeWrapperPtr loadPlane(ProgramPtr program, float aspect = 1.0f);
-ShapeWrapperPtr loadSphereSection(ProgramPtr program, float fov = PI / 3.0f * 2.0f, float aspect = 16.0f / 9.0f, int slices = 32, int stacks = 32);
+ShapeWrapperPtr loadPlane(const ProgramPtr& program, float aspect = 1.0f);
+ShapeWrapperPtr loadSphereSection(const ProgramPtr& program, float fov = PI / 3.0f * 2.0f, float aspect = 16.0f / 9.0f, int slices = 32, int stacks = 32);
     
 
 // A basic wrapper for constructing a framebuffer with a renderbuffer
@@ -208,13 +208,13 @@ inline void viewport(const uvec2 & size, const ivec2& position = ivec2(0)) {
 }
 
 ShapeWrapperPtr loadSphere(const std::initializer_list<const GLchar*>& names, ProgramPtr program);
-ShapeWrapperPtr loadSkybox(ProgramPtr program);
-ShapeWrapperPtr loadPlane(ProgramPtr program, float aspect);
-ImagePtr loadImage(const QString& path, bool flip = true);
+ShapeWrapperPtr loadSkybox(const ProgramPtr& program);
+ShapeWrapperPtr loadPlane(const ProgramPtr& program, float aspect);
+void loadImage(const QString& path, ImagePtr& image, bool flip = true);
 TexturePtr load2dTexture(const QString& path, uvec2 & outSize);
 TexturePtr load2dTexture(const QString& path);
-TexturePtr loadCubemapTexture(std::function<ImagePtr(int)> dataLoader);
-void renderGeometry(ShapeWrapperPtr & shape, ProgramPtr & program, const std::list<std::function<void()>> & list);
+TexturePtr loadCubemapTexture(std::function<QImage(int i)> dataLoader);
+void renderGeometry(ShapeWrapperPtr & shape, ProgramPtr & program, const std::list<std::function<void()>> & list = {});
 
 class Stacks {
 public:

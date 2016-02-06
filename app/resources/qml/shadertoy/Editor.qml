@@ -18,45 +18,14 @@ Window {
     visible: false
 
     readonly property string prefix: "../.."
-    property var currentShader;
-    property var currentShaderText;
     property var currentInputs: [ shadertoy.misc[0], shadertoy.misc[0], shadertoy.misc[0], shadertoy.misc[0] ]
     property var channelImages: [ textureImage0, textureImage1, textureImage2, textureImage3 ]
 
-    function loadShaderId(shaderId) {
-        console.log("Shader load request for editor " + shaderId)
-        shadertoy.api.fetchShader(shaderId, loadShader)
-        root.visible = true;
-    }
-
-    function loadShader(shader) {
-        console.log("Got shader data " + shader )
-        root.currentShader = shader;
-        if (shader.renderpass.length != 1) {
-            console.warn("Multiple render passes not supported");
-            return;
-        }
-
-        var pass = shader.renderpass[0];
-        for (var i =0; i < pass.inputs.length; ++i) {
-            var input = pass.inputs[i];
-            if (input.ctype !== "texture" && input.ctype !== "cubemap") {
-                console.warn("Unsupported input type " + input.ctype);
-                return;
-            }
-        }
-
-        console.log("Loading text and image");
-
-        for (i = 0; i < 4; ++i) {
-            currentInputs[i] = null;
-        }
-
-        editor.setText(pass.code);
-        for (i = 0; i < pass.inputs.length; ++i) {
-            var channel = input.channel
-            input = pass.inputs[i];
-            setInput(channel, input);
+    Connections {
+        target: desktop
+        onCurrentShaderChanged: {
+            console.log("Current shader changed, setting text");
+            editor.setText(currentShader.renderpass[0].code)
         }
     }
 
@@ -69,12 +38,9 @@ Window {
     }
 
     function runShader() {
+        console.log("Running shader")
         editor.getText(function(text){
-            console.log("Setting shader source");
-            renderer.updateShaderSource(text);
-            for (var i = 0; i < 4; ++i) {
-                renderer.updateShaderInput(i, root.currentInputs[i]);
-            }
+            desktop.updateCode(text);
             renderer.build();
         });
     }
@@ -122,16 +88,6 @@ Window {
             ]
         }
 
-        Settings {
-            category: "EditorWindow"
-            property alias x: root.x
-            property alias y: root.y
-            property alias width: root.width
-            property alias height: root.height
-            property alias textSize: editor.fontSize
-            property alias theme: editor.theme
-            property alias currentText: root.currentShaderText
-        }
 
         Timer {
             interval: 5000
@@ -169,6 +125,32 @@ Window {
 
         }
 
+        Settings {
+            category: "EditorWindow"
+            property alias x: root.x
+            property alias y: root.y
+            property alias width: root.width
+            property alias height: root.height
+            property alias textSize: editor.fontSize
+            property alias theme: editor.theme
+            //property alias currentText: root.currentShaderText
+        }
+
+        Text {
+            id: editor
+            property real fontSize;
+            property string theme;
+            anchors { top: buttonRow.bottom; left: parent.left; right: textureColumn.left; bottom: parent.bottom; margins: 8 }
+            function getText(f) {
+                f(editor.text);
+            }
+
+            function setText(content) {
+                editor.text = content;
+            }
+        }
+
+        /*
         WebEngineView {
             id: editor
             anchors { top: buttonRow.bottom; left: parent.left; right: textureColumn.left; bottom: parent.bottom; margins: 8 }
@@ -245,6 +227,7 @@ Window {
                 }
             }
         }
+        */
 
         Column {
             id: textureColumn

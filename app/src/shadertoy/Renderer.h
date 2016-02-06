@@ -19,102 +19,104 @@ limitations under the License.
 
 #pragma once
 #include <QtCore/QObject>
+#include <QtCore/QElapsedTimer>
 
 #include <gl/OglplusHelpers.h>
 #include <GLMHelpers.h>
 
 #include "Shadertoy.h"
-#include "Input.h"
+#include "types/Input.h"
+#include "types/Shader.h"
+
 
 namespace shadertoy {
+    using TexturePair = std::array<TexturePtr, 2>;
 
     class Renderer : public QObject {
-        Q_OBJECT
-        Q_PROPERTY(QString currentShader READ currentShader WRITE setCurrentShader NOTIFY currentShaderChanged)
-        Q_PROPERTY(QString validShader READ validShader NOTIFY validShaderChanged)
+        Q_OBJECT;
+        //XQ_PROPERTY(Shader* shader READ shader WRITE setShader);
+        //XQ_PROPERTY(QSize size MEMBER _size NOTIFY sizeChanged);
+        //XQ_PROPERTY(float scale MEMBER _scale NOTIFY scaleChanged);
 
     signals:
         void compileError(const QString & source);
+        void compileFailure(const QString & source);
         void compileSuccess();
-        void currentShaderChanged();
-        void validShaderChanged();
-
+        void sizeChanged();
+        void scaleChanged();
+        
     public slots:
-        void updateShaderSource(const QString& source);
-        void updateShaderInput(int channel, const QVariant& input);
-        void updateShader(const QVariant& shader);
         void build();
+        void setShader(const QVariant& shader);
+        void keyPressed(int key);
+        void keyReleased(int key);
+        void mouseMoved(const QPoint& point);
+        void mousePressed(const QPoint& point);
+        void mouseReleased();
+        void restart();
+        void pause();
 
     public:
-        void setup();
+        void setup(const glm::uvec2& size);
         void render();
-        void updateUniforms();
+        Shader* shader();
+        void setShader(Shader* newShader);
+        void setShaderCode(Renderpass::Output output, const QString& code);
 
-        void restart() {
-            startTime = secTimestampNow();
-        }
-
-        void setPosition(const vec3 & position) {
-            this->position = position;
-        }
-
-        void setResolution(const vec2 & resolution) {
-            this->resolution = resolution;
-        }
-
-        //QString canonicalTexturePath(QString texturePath) {
-        //    while (canonicalPathMap.count(texturePath)) {
-        //        texturePath = canonicalPathMap[texturePath];
-        //    }
-        //    return texturePath;
-        //}
-
-        const QString& currentShader() const { return _currentShader; }
-        void setCurrentShader(const QString& shader);
-        const QString& validShader() const { return _validShader; }
-        virtual bool tryToBuild();
-        //virtual TextureData loadTexture(const QString& source);
-        //virtual void setChannelTextureInternal(int channel, shadertoy::InputType type, const QString & textureSource);
-        //virtual void setShaderInternal(const shadertoy::Shader & shader);
+        void setSize(const QSize& size);
+        void setScale(float scale);
 
     protected:
-        QString _currentShader;
-        QString _validShader;
+        void updateUniforms();
+        void initTextureCache();
+        void resize();
 
-        //void initTextureCache();
-        //typedef std::map<QString, TextureData> TextureMap;
-        //typedef std::map<QString, QString> CanonicalPathMap;
-        //CanonicalPathMap canonicalPathMap;
-        //TextureMap textureCache;
+        Shader* _shader{ nullptr };
+        QElapsedTimer _shaderTimer;
 
-        // The currently active input channels
-        //Input::Pointer inputs[4];
-
-        //// The shadertoy rendering resolution scale.  1.0 means full resolution
-        //// as defined by the Oculus SDK as the ideal offscreen resolution
-        //// pre-distortion
-        //float texRes{ 1.0f };
-        // float eyePosScale{ 1.0f };
-
-        // The current rendering resolution
-        vec2 resolution;
-        // Contains the current 'camera position'
-        vec3 position;
-        // The amount of time since we started running
-        float startTime { 0.0f };
-
-        // The current fragment source
-        LambdaList uniformLambdas;
-        // Geometry for the skybox used to render the scene
-        ShapeWrapperPtr skybox;
-        // A vertex shader shader, constant throughout the application lifetime
-        VertexShaderPtr vertexShader;
         // The fragment shader used to render the shadertoy effect, as loaded
         // from a preset or created or edited by the user
-        FragmentShaderPtr fragmentShader;
-        // The compiled shadertoy program
-        ProgramPtr shadertoyProgram;
+        bool _resolutionDirty { true };
+        // The size of the output framebuffer
+        uvec2 _size;
+        // The current rendering resolution (_size * _scale)
+        uvec2 _renderResolution;
+        // Equal to or half the width of the render resolution (depending on stereo settings)
+        uvec2 _eyeRenderResolution; 
 
+        // The shadertoy rendering resolution scale.  1.0 means full resolution
+        // as defined by the Oculus SDK as the ideal offscreen resolution
+        // pre-distortion
+        float _renderScale { 0.5 };
+
+        float _hmdScale { 1.0 };
+
+        // The shadertoy rendering resolution scale.  1.0 means full resolution
+        // as defined by the Oculus SDK as the ideal offscreen resolution
+        // pre-distortion
+        int32_t _shaderFrame { 0 };
+        int32_t _uboAlignment { 0 };
+
+        QByteArray _shadertoyInputs;
+        QByteArray _keyboardState;
+        vec4 _mouse { 0 };
+
+        // UBO container
+        BufferPtr _uniformsBuffer;
+        // Geometry for the skybox used to render the scene
+        ShapeWrapperPtr _skybox;
+
+        // Framebuffers and textures for multipass rendering
+        std::array<FramebufferPtr, 2> _bufferFramebuffers[4];
+
+        // Framebuffer and texture for final result
+        FramebufferPtr _imageFramebuffer;
+        TexturePtr _imageTexture;
+
+        // Simple 2D plane rendering
+        ProgramPtr _planeProgram;
+        ShapeWrapperPtr _plane;
     };
 
 }
+

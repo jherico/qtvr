@@ -11,6 +11,8 @@
 #define hifi_Shared_JSONHelpers_h
 
 #include "../GLMHelpers.h"
+class QJSonValue;
+class QJsonDocument;
 
 QJsonValue toJsonValue(const quat& q);
 
@@ -19,5 +21,8 @@ QJsonValue toJsonValue(const vec3& q);
 quat quatFromJsonValue(const QJsonValue& q);
 
 vec3 vec3FromJsonValue(const QJsonValue& q);
+
+QJsonDocument jsonFromFile(const QString& filePath);
+QJsonDocument jsonFromString(const QString& json);
 
 #endif

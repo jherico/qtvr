@@ -178,19 +178,6 @@ OpenGLDisplayPlugin::OpenGLDisplayPlugin() {
         cleanupForSceneTexture(texture);
         qApp->releaseSceneTexture(texture);
     });
-
-    connect(&_timer, &QTimer::timeout, this, [&] {
-#ifdef Q_OS_MAC
-        // On Mac, QT thread timing is such that we can miss one or even two cycles quite often, giving a render rate (including update/simulate)
-        // far lower than what we want. This hack keeps that rate more natural, at the expense of some wasted rendering.
-        // This is likely to be mooted by further planned changes.
-        if (_active && _sceneTextureEscrow.depth() <= 1) {
-#else
-        if (_active && _sceneTextureEscrow.depth() < 1) {
-#endif
-            emit requestRender();
-        }
-    });
 }
 
 void OpenGLDisplayPlugin::cleanupForSceneTexture(uint32_t sceneTexture) {
@@ -230,7 +217,6 @@ void OpenGLDisplayPlugin::activate() {
 }
 
 void OpenGLDisplayPlugin::stop() {
-    _timer.stop();
 }
 
 void OpenGLDisplayPlugin::deactivate() {
@@ -355,7 +341,6 @@ void OpenGLDisplayPlugin::updateFramerate() {
     }
 }
 
-
 void OpenGLDisplayPlugin::internalPresent() {
     using namespace oglplus;
     uvec2 size = getSurfacePixels();
@@ -378,16 +363,12 @@ void OpenGLDisplayPlugin::internalPresent() {
 }
 
 void OpenGLDisplayPlugin::present() {
+    incrementPresentCount();
     updateTextures();
     if (_currentSceneTexture) {
         internalPresent();
         updateFramerate();
     }
-
-#if THREADED_PRESENT 
-#else
-    emit requestRender();
-#endif
 }
 
 float OpenGLDisplayPlugin::presentRate() {

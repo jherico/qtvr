@@ -18,7 +18,7 @@
 #include <gl/OglplusHelpers.h>
 #include <gl/GLEscrow.h>
 
-#define THREADED_PRESENT 1
+#define THREADED_PRESENT 0
 
 class OpenGLDisplayPlugin : public DisplayPlugin {
 protected:
@@ -73,7 +73,6 @@ protected:
     // Plugin specific functionality to composite the scene and overlay and present the result
     virtual void internalPresent();
 
-    mutable QTimer _timer;
     ProgramPtr _program;
     ShapeWrapperPtr _plane;
 

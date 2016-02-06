@@ -62,8 +62,8 @@ protected:
     virtual void cleanupBeforeQuit();
     virtual void update(float deltaTime);
 
-private:
     QElapsedTimer _lastTimeUpdated;
+private:
     bool _aboutToQuit { false };
     bool _isForeground { true };
     FileLogger* _logger;

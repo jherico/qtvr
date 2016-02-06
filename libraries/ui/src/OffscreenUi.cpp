@@ -315,23 +315,36 @@ class KeyboardFocusHack : public QObject {
 public:
     KeyboardFocusHack() {
         Q_ASSERT(_mainWindow);
-        QTimer::singleShot(200, [=] {
-            _hackWindow = new QWindow();
-            _hackWindow->setFlags(Qt::FramelessWindowHint);
-            _hackWindow->setGeometry(_mainWindow->x(), _mainWindow->y(), 10, 10);
-            _hackWindow->show();
-            _hackWindow->requestActivate();
-            QTimer::singleShot(200, [=] {
-                _hackWindow->hide();
-                _hackWindow->deleteLater();
-                _hackWindow = nullptr;
-                _mainWindow->requestActivate();
-                this->deleteLater();
-            });
-        });
+        _hackWindow = new QWindow();
+        _hackWindow->setFlags(Qt::FramelessWindowHint);
+        _hackWindow->setGeometry(_mainWindow->x(), _mainWindow->y(), 10, 10);
+        queueActivate();
     }
 
 private:
+
+    void queueActivate() {
+        if (_hackWindow->isActive()) {
+            queueDestroy();
+        } else {
+            QTimer::singleShot(200, [=] {
+                _mainWindow->requestActivate();
+                _hackWindow->show();
+                _hackWindow->requestActivate();
+                queueActivate();
+            });
+        }
+    }
+
+    void queueDestroy() {
+        QTimer::singleShot(400, [=] {
+            _hackWindow->hide();
+            _hackWindow->deleteLater();
+            _hackWindow = nullptr;
+            _mainWindow->requestActivate();
+            this->deleteLater();
+        });
+    }
     
     static QWindow* findMainWindow() {
         auto windows = qApp->topLevelWindows();

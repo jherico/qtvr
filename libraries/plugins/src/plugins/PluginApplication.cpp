@@ -36,7 +36,9 @@
 #include <QtGui/QDesktopServices>
 
 #include <QtGui/QOpenGLFramebufferObject>
+
 #include <shared/NsightHelpers.h>
+#include <NumericalConstants.h>
 
 #include <gl/Config.h>
 #include <gl/QOpenGLContextWrapper.h>
@@ -61,6 +63,12 @@
 #include <ResourceCache.h>
 #include <UUID.h>
 #include <OffscreenUi.h>
+
+static const unsigned int THROTTLED_SIM_FRAMERATE = 15;
+static const int THROTTLED_SIM_FRAME_PERIOD_MS = MSECS_PER_SECOND / THROTTLED_SIM_FRAMERATE;
+static const unsigned int CAPPED_SIM_FRAMERATE = 60;
+static const int CAPPED_SIM_FRAME_PERIOD_MS = MSECS_PER_SECOND / CAPPED_SIM_FRAMERATE;
+
 
 PluginApplication::PluginApplication(int& argc, char** argv)
     : UiApplication(argc, argv) {
@@ -179,9 +187,59 @@ void PluginApplication::submitGL() {
         const auto size = _fboCache.getSize();
         displayPlugin->submitSceneTexture(getFrameCount(), finalTexture, toGlm(size));
     }
+    _pendingPaint = false;
 }
 
+static const uint32_t INVALID_FRAME = UINT32_MAX;
+static uint32_t _renderedFrameIndex { INVALID_FRAME };
+
 void PluginApplication::idle() {
+    auto now = usecTimestampNow();
+    auto displayPlugin = getActiveDisplayPlugin();
+    // depending on whether we're throttling or not.
+    // Once rendering is off on another thread we should be able to have Application::idle run at start(0) in
+    // perpetuity and not expect events to get backed up.
+    bool isThrottled = displayPlugin->isThrottled();
+    //  Only run simulation code if more than the targetFramePeriod have passed since last time we ran
+    // This attempts to lock the simulation at 60 updates per second, regardless of framerate
+    float timeSinceLastUpdateUs = (float)_lastTimeUpdated.nsecsElapsed() / NSECS_PER_USEC;
+    float secondsSinceLastUpdate = timeSinceLastUpdateUs / USECS_PER_SECOND;
+
+    auto presentCount = displayPlugin->presentCount();
+    if (presentCount < _renderedFrameIndex) {
+        _renderedFrameIndex = INVALID_FRAME;
+    }
+
+    // Nested ifs are for clarity in the logic.  Don't collapse them into a giant single if.
+    // Don't saturate the main thread with rendering, no paint calls until the last one is complete
+    if (!_pendingPaint) {
+        // Also no paint calls until the display plugin has increased by at least one frame 
+        // (don't render at 90fps if the display plugin only goes at 60)
+        if (_renderedFrameIndex == INVALID_FRAME || presentCount > _renderedFrameIndex) {
+            // Record what present frame we're on
+            _renderedFrameIndex = presentCount;
+            // Don't allow paint requests to stack up in the event queue
+            _pendingPaint = true;
+            // But when we DO request a paint, get to it as soon as possible: high priority
+            postEvent(this, new QEvent(static_cast<QEvent::Type>(Render)), Qt::HighEventPriority);
+        }
+    }
+
+    // For the rest of idle, we want to cap at the max sim rate, so we might not call 
+    // the remaining idle work every paint frame, or vice versa
+    // In theory this means we could call idle processing more often than painting,
+    // but in practice, when the paintGL calls aren't keeping up, there's no room left
+    // in the main thread to call idle more often than paint.
+    // This check is mostly to keep idle from burning up CPU cycles by running at 
+    // hundreds of idles per second when the rendering is that fast
+    if ((timeSinceLastUpdateUs / USECS_PER_MSEC) < CAPPED_SIM_FRAME_PERIOD_MS) {
+        // No paint this round, but might be time for a new idle, otherwise return
+        return;
+    }
+
+    // We're going to execute idle processing, so restart the last idle timer
+    _lastTimeUpdated.start();
+
     UiApplication::idle();
     return;
     {
@@ -296,12 +354,6 @@ void PluginApplication::updateDisplayMode() {
                 activePlugin = displayPlugin->getName();
             }
 
-            // This must be a queued connection to avoid a deadlock
-            QObject::connect(displayPlugin.get(), &DisplayPlugin::requestRender, [this] {
-                //postEvent(this, new QEvent((QEvent::Type)CustomEventTypes::Render), Qt::HighEventPriority);
-                postEvent(this, new QEvent((QEvent::Type)CustomEventTypes::Render), Qt::LowEventPriority);
-            });
-
             QObject::connect(displayPlugin.get(), &DisplayPlugin::recommendedFramebufferSizeChanged, [this](const QSize & size) {
                 resizeGL();
             });
@@ -411,4 +463,8 @@ QOpenGLContext* PluginApplication::getPrimaryRenderingContext() {
 
 bool PluginApplication::makePrimaryRenderingContextCurrent() {
     return _offscreenContext->makeCurrent();
+}
+
+void PluginApplication::restoreDefaultFramebuffer() {
+    _currentFramebuffer->bind();
 }

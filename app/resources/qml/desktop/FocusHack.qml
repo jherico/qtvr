@@ -7,14 +7,20 @@ FocusScope {
         id: textInput;
         focus: true
         width: 10; height: 10
-        onActiveFocusChanged: root.destroy()
+        onActiveFocusChanged: {
+            console.log("Got focus");
+            root.destroy()
+        }
     }
 
     Timer {
         id: focusTimer
         running: false
         interval: 100
-        onTriggered: textInput.forceActiveFocus()
+        onTriggered: {
+            console.log("FocusHack forcing focus to input");
+            textInput.forceActiveFocus()
+        }
     }
 
     function start() {

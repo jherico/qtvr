@@ -12,44 +12,13 @@ Menu {
             onTriggered: Qt.quit()
         }
     }
-    Menu {
-        title: "Edit"
-
-        MenuItem {
-            text: "Cut"
-            shortcut: "Ctrl+X"
-            onTriggered: console.log("Cut")
-        }
-
-        MenuItem {
-            text: "Copy"
-            shortcut: "Ctrl+C"
-            onTriggered: console.log("Copy")
-        }
-
-        MenuItem {
-            text: "Paste"
-            shortcut: "Ctrl+V"
-            onTriggered: console.log("Paste")
-        }
-
-        MenuSeparator { }
-
-        Menu {
-            title: "More Stuff"
-
-            MenuItem {
-                text: "Do Nothing"
-                onTriggered: console.log("Nothing")
-            }
-        }
-    }
 
     MenuItem {
         id: editorItem
         action: Action {
-            id: editorAction
-            text: "Toggle Editor"
+            checkable: true
+            checked: desktop.editor.visible
+            text: "Editor"
             shortcut: "`"
             onTriggered: desktop.toggleEditor()
         }
@@ -58,6 +27,8 @@ Menu {
     MenuItem {
         id: browserItem
         action: Action {
+            checkable: true
+            checked: desktop.browser.visible
             text: "Browser"
             onTriggered: desktop.toggleBrowser()
         }
@@ -68,11 +39,7 @@ Menu {
         title: "Display"
         ExclusiveGroup {
             id: displayPluginsGroup
-            onCurrentChanged: {
-                console.log("Current item " + displayPluginsGroup.current)
-                console.log("Current item " + displayPluginsGroup.current.text)
-                root.activateDisplayPlugin(displayPluginsGroup.current.text);
-            }
+            onCurrentChanged: root.activateDisplayPlugin(displayPluginsGroup.current.text);
         }
     }
 

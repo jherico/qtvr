@@ -1,4 +1,5 @@
 import QtQuick 2.5
+import QtQuick.Controls 1.4
 
 import "../desktop"
 import "."
@@ -10,14 +11,15 @@ Desktop {
     rootMenu: AppMenu { }
     property alias editor: editor;
     property alias browser: browser;
-    property var cursorPosition;
+    property vector2d cursorPosition: Qt.vector2d(0, 0);
+    property var currentShader;
+
+    signal updateCode(string code);
 
     onCursorPositionChanged: {
-//        cursor.x = cursorPosition.x;
-//        cursor.y = cursorPosition.y;
+        cursorImage.x = cursorPosition.x;
+        cursorImage.y = cursorPosition.y;
     }
-
-    signal loadShader(string shaderId);
 
     Shadertoy { id: shadertoy }
 
@@ -30,20 +32,19 @@ Desktop {
         onClicked: desktop.toggleMenu(Qt.vector2d(mouseX, mouseY));
     }
 
-//    FontAwesome {
-//        z: 10000
-//        id: cursor
-//        text: "\uf245"
-//        size: 24
-//        FontAwesome {
-//            text: "\uf245"
-//            color: "white"
-//            size: parent.size * 0.7
-//            x: 2
-//            y: 4
-//        }
-
-//    }
+    FontAwesome {
+        z: 10000
+        id: cursorImage
+        text: "\uf245"
+        size: 24
+        FontAwesome {
+            text: "\uf245"
+            color: "white"
+            size: parent.size * 0.7
+            x: 2
+            y: 4
+        }
+    }
 
     function setDisplayPlugins(plugins) {
         rootMenu.setDisplayPlugins(menu)
@@ -85,10 +86,25 @@ Desktop {
         editor.visible = !editor.visible;
     }
 
+
+    function loadShaderId(shaderId) {
+        console.log("Shader load request for editor " + shaderId)
+        shadertoy.api.fetchShader(shaderId, loadShader)
+        //root.visible = true;
+    }
+
+    function loadShader(shader) {
+        console.log("Got shader data " + shader )
+        currentShader = shader;
+        renderer.setShader(shader);
+        renderer.build();
+    }
+
+
     Browser {
         id: browser;
         visible: false;
-        onSelectedShader: editor.loadShaderId(shaderId);
+        onSelectedShader: desktop.loadShaderId(shaderId);
     }
 
     function toggleBrowser() {
@@ -105,19 +121,61 @@ Desktop {
 
     Component {
         id: texturePickerBuilder;
-        TexturePicker {
-            onSelected: {
-                console.log("Selected texture " + input + " for channel " + channel)
-                console.log("Preview " + input.preview);
-                editor.setInput(channel, input)
-
-            }
-        }
+        TexturePicker { onSelected: editor.setInput(channel, input) }
     }
 
     function pickTexture(channel) {
         texturePickerBuilder.createObject(desktop, { channel: channel });
     }
 
+    Action {
+        id:  toggleBrowserAction
+        shortcut: "Ctrl+B"
+        onTriggered: toggleBrowser();
+    }
 
+    Action {
+        id:  toggleEditorAction
+        shortcut: "Ctrl+E"
+        onTriggered: toggleEditor();
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        property point cursor: Qt.point(0, 0);
+        onMouseXChanged: {
+            cursor.x = mouseX;
+            renderer.mouseMoved(cursor);
+        }
+        onMouseYChanged: {
+            cursor.y = mouseY
+            renderer.mouseMoved(cursor);
+        }
+        onPressed: {
+            cursor = Qt.point(mouseX, mouseY);
+            renderer.mousePressed(cursor);
+        }
+        onReleased: {
+            cursor = Qt.point(0, 0);
+            renderer.mouseReleased();
+        }
+
+    }
+
+    Keys.onPressed: {
+        renderer.keyPressed(event.key);
+        event.accepted = false;
+    }
+
+    Keys.onReleased: {
+        renderer.keyReleased(event.key);
+        event.accepted = false;
+    }
+
+    focus: true
+
+//    onKeyEvent: {
+//        console.log("App desktop got key" + event.key);
+//    }
 }

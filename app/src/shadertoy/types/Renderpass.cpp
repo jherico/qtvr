@@ -18,38 +18,23 @@ limitations under the License.
 ************************************************************************************/
 
 #include "Renderpass.h"
-#include <QJsonObject>
-#include <QJsonArray>
 
-bool Renderpass::parse(const QJsonValue& renderpass) {
-    if (!renderpass.isObject()) {
-        return false;
-    }
-
-    auto renderpassObject = renderpass.toObject();
-    code = renderpassObject.value("code").toString();
+bool Renderpass::parse(const QVariant& var) {
+    auto varMap = var.toMap();
+    code = varMap["code"].toString();
     
-    auto typeValue = renderpassObject.value("type").toString();
+    auto typeValue = varMap["type"].toString();
     if (typeValue == "image") {
-        type = IMAGE;
+        output = IMAGE;
     } else if (typeValue == "buffer") {
-        type = BUFFER;
+        output = BUFFER_A;
     } else if (typeValue == "sound") {
-        type = SOUND;
+        output = SOUND;
     } else {
         return false;
     }
 
-    auto inputsValue = renderpassObject.value("inputs");
-    if (!inputsValue.isArray()) {
-        return false;
-    }
-
-    for (auto inputValue : inputsValue.toArray()) {
-        if (!inputValue.isObject()) {
-            return false;
-        }
-
+    for (auto inputValue : varMap["inputs"].toList()) {
         auto input = new Input(this);
         _inputs.push_back(input);
         if (!input->parse(inputValue)) {

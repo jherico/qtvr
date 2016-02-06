@@ -25,7 +25,7 @@ FocusScope {
     readonly property alias zLevels: zLevels
     QtObject {
         id: zLevels;
-        readonly property real normal: 0
+        readonly property real normal: 1
         readonly property real top: 2000
         readonly property real modal: 4000
         readonly property real menu: 8000
@@ -282,7 +282,6 @@ FocusScope {
         }
         event.accepted = false;
     }
-
 
     function unfocusWindows() {
         var windows = d.getTopLevelWindows();

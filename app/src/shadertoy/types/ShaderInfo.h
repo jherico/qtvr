@@ -23,8 +23,6 @@ limitations under the License.
 #include <QtCore/QStringList>
 #include <QtCore/QDateTime>
 
-class QJsonValue;
-
 class ShaderInfo : public QObject {
     Q_OBJECT;
     Q_PROPERTY(QString id MEMBER id CONSTANT);
@@ -50,6 +48,6 @@ public:
     int likes{ 0 };
     int flags{ 0 };
     int published{ 0 };
-    bool parse(const QJsonValue& shader);
+    bool parse(const QVariant& shader);
 };
 

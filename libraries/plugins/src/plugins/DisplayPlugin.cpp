@@ -13,6 +13,7 @@
 #include "impl/display/stereo/SideBySideStereoDisplayPlugin.h"
 #include "impl/display/stereo/InterleavedStereoDisplayPlugin.h"
 #include "impl/display/Basic2DWindowOpenGLDisplayPlugin.h"
+#include "impl/display/DebugVrDisplayPlugin.h"
 
 const QString& DisplayPlugin::MENU_PATH() {
     static const QString value = "Display";
@@ -25,12 +26,15 @@ DisplayPluginList getDisplayPlugins() {
         new Basic2DWindowOpenGLDisplayPlugin(),
 #ifdef DEBUG
         new NullDisplayPlugin(),
+//        new DebugVrDisplayPlugin(),
 #endif
+        /*
         // Stereo modes
         // SBS left/right
         new SideBySideStereoDisplayPlugin(),
         // Interleaved left/right
         new InterleavedStereoDisplayPlugin(),
+        */
         nullptr
     };
 
