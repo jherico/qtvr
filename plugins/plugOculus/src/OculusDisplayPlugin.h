@@ -13,6 +13,8 @@
 
 struct SwapFramebufferWrapper;
 using SwapFboPtr = QSharedPointer<SwapFramebufferWrapper>;
+struct MirrorFramebufferWrapper;
+using MirrorFboPtr = QSharedPointer<MirrorFramebufferWrapper>;
 
 const float TARGET_RATE_Oculus = 75.0f;
 
@@ -36,6 +38,7 @@ private:
     bool _monoPreview { true };
     QMap<uint32_t, EyePoses> _frameEyePoses;
 
+    MirrorFboPtr     _mirrorFbo;
     SwapFboPtr       _sceneFbo;
     SwapFboPtr       _overlayFbo;
     ovrLayerHeader*  _layers[2];

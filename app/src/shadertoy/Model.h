@@ -18,30 +18,34 @@ limitations under the License.
 ************************************************************************************/
 
 #pragma once
-#include <QtCore/QObject>
-#include <QQmlListProperty>
-#include "Input.h"
+#include <QAbstractListModel>
+#include "Cache.h"
 
-class QJsonValue;
+namespace shadertoy  {
 
-struct Renderpass : public QObject {
-public:
-    enum Type { IMAGE, BUFFER, SOUND };
+    class Model : public QAbstractListModel {
+        Q_OBJECT;
+        Q_PROPERTY(QStringList shaderIds READ shaderIds WRITE setShaderIds);
+    public:
+        enum ShaderRoles {
+            IdRole = Qt::UserRole + 1,
+            ShaderRole,
+            SearchRole,
+            NameRole,
+        };
 
-private:
-    Q_OBJECT
-    Q_PROPERTY(QString code MEMBER code CONSTANT)
-    Q_PROPERTY(Type type MEMBER type CONSTANT)
-    Q_PROPERTY(QQmlListProperty<Input> inputs READ inputs CONSTANT)
-    Q_ENUMS(Type)
-public:
-    Renderpass(QObject* parent = nullptr) : QObject(parent) {}
-    QString code;
-    Type type{ IMAGE };
+        Model();
+        void setShaderIds(const QStringList& ids);
+        QStringList shaderIds();
 
-    QQmlListProperty<Input> inputs() { return QQmlListProperty<Input>(this, _inputs); }
-    bool parse(const QJsonValue& shader); 
+    protected:
+        int rowCount(const QModelIndex & parent = QModelIndex()) const override;
+        QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const override;
+        QHash<int, QByteArray> roleNames() const override;
 
-protected:
-    QList<Input*> _inputs;
-};
+    public:
+        Cache* _cache { nullptr };
+        QStringList _currentIds;
+    };
+
+}

@@ -154,6 +154,9 @@ void OculusDisplayPlugin::customizeContext() {
     _sceneFbo = SwapFboPtr(new SwapFramebufferWrapper(_session));
     _sceneFbo->Init(getRecommendedRenderSize());
 
+    _mirrorFbo = MirrorFboPtr(new MirrorFramebufferWrapper(_session));
+    _mirrorFbo->Init(getRecommendedRenderSize());
+
     // We're rendering both eyes to the same texture, so only one of the 
     // pointers is populated
     _sceneLayer.ColorTexture[0] = _sceneFbo->color;
@@ -189,21 +192,6 @@ void OculusDisplayPlugin::internalPresent() {
     // Need to make sure only the display plugin is responsible for 
     // controlling vsync
     wglSwapIntervalEXT(0);
-
-    // screen preview mirroring
-    if (_enablePreview) {
-        auto windowSize = toGlm(_window->size());
-        if (_monoPreview) {
-            Context::Viewport(windowSize.x * 2, windowSize.y);
-            Context::Scissor(0, windowSize.y, windowSize.x, windowSize.y);
-        } else {
-            Context::Viewport(windowSize.x, windowSize.y);
-        }
-        glBindTexture(GL_TEXTURE_2D, _currentSceneTexture);
-        GLenum err = glGetError();
-        Q_ASSERT(0 == err);
-        drawUnitQuad();
-    }
 
     _sceneFbo->Bound([&] {
         auto size = _sceneFbo->size;
@@ -263,6 +251,18 @@ void OculusDisplayPlugin::internalPresent() {
             qDebug() << result;
         }
     }
+
+    // screen preview mirroring
+    if (_enablePreview) {
+        auto windowSize = toGlm(_window->size());
+        Context::Viewport(windowSize.x, windowSize.y);
+        glBindTexture(GL_TEXTURE_2D, _mirrorFbo->color->OGL.TexId);
+        GLenum err = glGetError();
+        Q_ASSERT(0 == err);
+        drawUnitQuad();
+    }
+
+
     _sceneFbo->Increment();
     _overlayFbo->Increment();
 

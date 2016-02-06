@@ -7,8 +7,8 @@ endif ()
 include(ExternalProject)
 ExternalProject_Add(
   ${EXTERNAL_NAME}
-  URL http://hifi-public.s3.amazonaws.com/dependencies/glew_simple2.zip
-  URL_MD5 f05d858e8203c32b689da208ad8b39db
+  URL https://s3.amazonaws.com/Oculus/glew_simple_20160131.zip
+  URL_MD5 49fc76ac1adf6d974d5fe93186ed7ae3
   CONFIGURE_COMMAND CMAKE_ARGS ${ANDROID_CMAKE_ARGS} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
   LOG_DOWNLOAD 1
   LOG_CONFIGURE 1

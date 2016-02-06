@@ -85,10 +85,8 @@ HifiApplication::HifiApplication(int& argc, char** argv) : QGuiApplication(argc,
     int SAVE_SETTINGS_INTERVAL = 10 * MSECS_PER_SECOND; // Let's save every seconds for now
     connect(this, &HifiApplication::applicationStateChanged, this, &HifiApplication::activeChanged);
 
-    _idleTimer.setInterval(5);
-    connect(&_idleTimer, &QTimer::timeout, [this] {
-        idle();
-    });
+    _idleTimer.setInterval(0);
+    connect(&_idleTimer, &QTimer::timeout, [this] { idle(); });
     _idleTimer.start();
 }
 

@@ -120,7 +120,6 @@ int main(int argc, char *argv[]) {
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("DebugQML", true);
-    engine.rootContext()->setContextProperty("shadertoyOfflineAPI", new Cache(getResourceDirectory() + "/shadertoys/"));
     engine.setNetworkAccessManagerFactory(new MyQmlNetworkAccessManagerFactory());
     addImportPath(engine, "../qml");
     addImportPath(engine, "../../../app/resources/qml");

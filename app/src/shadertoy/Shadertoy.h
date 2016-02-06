@@ -33,16 +33,7 @@ public:
     enum Wrap { CLAMP, REPEAT };
 
     static const int MAX_CHANNELS = 4;
-    static const char* const UNIFORM_RESOLUTION;
-    static const char* const UNIFORM_GLOBALTIME;
-    static const char* const UNIFORM_CHANNEL_TIME;
-    static const char* const UNIFORM_CHANNEL_RESOLUTIONS[MAX_CHANNELS];
-    static const char* const UNIFORM_CHANNEL_RESOLUTION;
-    static const char* const UNIFORM_MOUSE_COORDS;
-    static const char* const UNIFORM_DATE;
-    static const char* const UNIFORM_SAMPLE_RATE;
-    static const char* const UNIFORM_POSITION;
     static const char* const UNIFORM_CHANNELS[MAX_CHANNELS];
-
+    static const QRegularExpression VR_MARKER;
 };
 

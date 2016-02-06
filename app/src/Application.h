@@ -1,8 +1,9 @@
 #include <plugins/PluginApplication.h>
+#include <QSortFilterProxyModel>
 
 #include "shadertoy/Shadertoy.h"
 #include "shadertoy/Renderer.h"
-#include "shadertoy/ShaderModel.h"
+#include "shadertoy/Model.h"
 
 class Application : public PluginApplication {
     Q_OBJECT
@@ -18,8 +19,10 @@ protected:
 
 protected slots:
     void loadShader(const QString& shaderId);
+    void onUpdateCode(const QString& code);
 
 private:
     shadertoy::Renderer _renderer;
-    ShaderModel* _model{ nullptr };
+    std::shared_ptr<QSortFilterProxyModel> _proxy;
+    std::shared_ptr<shadertoy::Model> _model;
 };

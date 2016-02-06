@@ -27,7 +27,7 @@ public:
     virtual bool isHmd() const override final { return true; }
     virtual glm::mat4 getProjection(Eye eye, const glm::mat4& baseProjection) const override;
     virtual glm::uvec2 getRecommendedRenderSize() const override final;
-    virtual glm::uvec2 getRecommendedUiSize() const override final { return uvec2(1920, 1080); }
+    virtual glm::uvec2 getRecommendedUiSize() const override final { return uvec2(1280, 720); }
     virtual void resetSensors() override final;
     virtual glm::mat4 getEyeToHeadTransform(Eye eye) const override final;
     virtual float getIPD() const override final;

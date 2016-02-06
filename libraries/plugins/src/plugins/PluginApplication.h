@@ -64,6 +64,7 @@ public:
 
     QOpenGLContext* getPrimaryRenderingContext() override;
     bool makePrimaryRenderingContextCurrent() override;
+    void restoreDefaultFramebuffer();
 
     
 signals:
@@ -79,6 +80,7 @@ protected slots:
     void updateInputModes();
 
 protected:
+
     virtual void updateOverlayTexture(uint32_t textureId, const glm::uvec2& size) override;
     virtual void cleanupBeforeQuit() override;
     virtual void initializeUI(const QUrl& desktopUrl) override;
@@ -93,6 +95,7 @@ protected:
     QOpenGLFramebufferObject* _currentFramebuffer { nullptr };
     DisplayPluginPointer _newDisplayPlugin;
     FboCache _fboCache;
+    bool _pendingPaint { false };
 };
 
 #if defined(qApp)

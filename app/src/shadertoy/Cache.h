@@ -6,39 +6,25 @@
 #include <QtCore/QVariant>
 #include <QtCore/QSet>
 
-#include "Shader.h"
+#include "types/Shader.h"
 
-class Cache : public QObject {
-    Q_OBJECT
-public:
-    Cache(QObject* parent = nullptr) : QObject(parent) {}
-    Cache(const QString& basePath, QObject* parent = nullptr);
-    Q_INVOKABLE QStringList fetchShaderList() const;
-    Q_INVOKABLE QVariant fetchShader(const QString& shaderId) const;
-    Q_INVOKABLE QVariant fetchShaderInfo(const QString& shaderId) const;
-    Q_INVOKABLE QStringList queryShaders(const QString& query, const QVariantMap& parameters) const;
+namespace shadertoy {
 
-public:
+    class Cache : public QObject {
+        Q_OBJECT
+    public:
+        Cache(QObject* parent = nullptr);
 
-    struct Item {
-        Item(const QString& id = "");
-        Item(const Item& o);
-        Item& operator=(const Item& o);
-        bool load(const QString& basePath);
+        Q_INVOKABLE QStringList getShaderList() const;
+        Q_INVOKABLE void setShaderList(const QString& shaderListJson);
+        Q_INVOKABLE bool hasShader(const QString& shaderId) const;
+        Q_INVOKABLE QVariant getShader(const QString& shaderId) const;
+        Q_INVOKABLE QVariant setShader(const QString& shaderId, const QString& shaderJson);
 
-        bool matchQuery(const QRegularExpression& re) const;
-        bool matchFilter(const QString& filter) const;
-
-        QString id;
-        QVariant shader;
-        QVariant info;
-        QString textSearch;
-        QSet<QString> tags;
+    private:
+        const QString _basePath;
+        QHash<QString, Shader*> _shadersById;
+        QStringList _shaderIds;
     };
 
-    const QString _basePath;
-    QList<Shader*> _shaders;
-    QHash<QString, Shader*> _shadersById;
-    QHash<QString, QStringList> _sortedIds;
-};
-
+}

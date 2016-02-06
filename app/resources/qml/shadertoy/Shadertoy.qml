@@ -11,6 +11,9 @@ QtObject {
 
     property var activeTextures: [ misc[0], misc[0], misc[0], misc[0] ]
     property var api: ShadertoyAPI {}
+    Component.onCompleted: {
+        api.fetchShaderList();
+    }
 
     readonly property var textures: [
         {

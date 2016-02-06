@@ -26,6 +26,7 @@ limitations under the License.
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
 #include <QtCore/QVariant>
+#include <QtCore/QRegularExpression>
 
 #include <QtXml/QDomDocument>
 
@@ -52,21 +53,6 @@ QJsonValue path(const QJsonValue & parent, std::initializer_list<QVariant> eleme
     return current;
 }
 
-const char* const Shadertoy::UNIFORM_RESOLUTION = "iResolution";
-const char* const Shadertoy::UNIFORM_GLOBALTIME = "iGlobalTime";
-const char* const Shadertoy::UNIFORM_CHANNEL_TIME = "iChannelTime";
-const char* const Shadertoy::UNIFORM_CHANNEL_RESOLUTIONS[MAX_CHANNELS] = {
-    "iChannelResolution[0]",
-    "iChannelResolution[1]",
-    "iChannelResolution[2]",
-    "iChannelResolution[3]",
-};
-
-const char* const Shadertoy::UNIFORM_CHANNEL_RESOLUTION = "iChannelResolution";
-const char* const Shadertoy::UNIFORM_MOUSE_COORDS = "iMouse";
-const char* const Shadertoy::UNIFORM_DATE = "iDate";
-const char* const Shadertoy::UNIFORM_SAMPLE_RATE = "iSampleRate";
-const char* const Shadertoy::UNIFORM_POSITION = "iPos";
 const char* const Shadertoy::UNIFORM_CHANNELS[MAX_CHANNELS] = {
     "iChannel0",
     "iChannel1",
@@ -242,3 +228,6 @@ const char* const Shadertoy::UNIFORM_CHANNELS[MAX_CHANNELS] = {
     //    file.write(doc.toByteArray());
     //    file.close();
     //}
+
+
+const QRegularExpression Shadertoy::VR_MARKER("\\bmainVR\\b");

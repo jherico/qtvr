@@ -8,9 +8,11 @@
 
 #include "JSONHelpers.h"
 
+#include <QtCore/QJsonDocument>
 #include <QtCore/QJsonValue>
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
+#include <QtCore/QFile>
 
 template <typename T> 
 QJsonValue glmToJson(const T& t) {
@@ -57,3 +59,20 @@ vec3 vec3FromJsonValue(const QJsonValue& v) {
     return glmFromJson<vec3>(v);
 }
 
+QJsonDocument jsonFromFile(const QString& filePath) {
+    QFile file(filePath);
+    if (!file.exists()) {
+        qDebug() << "Could not find file" << filePath;
+        return QJsonDocument();
+    }
+    if (!file.open(QFile::ReadOnly)) {
+        qDebug() << "Could not open file" << filePath;
+        return QJsonDocument();
+    }
+    auto byteArray = file.readAll();
+    return QJsonDocument::fromJson(byteArray);
+}
+
+QJsonDocument jsonFromString(const QString& json) {
+    return QJsonDocument::fromJson(json.toUtf8());
+}

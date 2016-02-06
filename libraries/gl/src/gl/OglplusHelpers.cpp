@@ -307,7 +307,7 @@ public:
     }
 };
 
-ShapeWrapperPtr loadSphereSection(ProgramPtr program, float fov, float aspect, int slices, int stacks) {
+ShapeWrapperPtr loadSphereSection(const ProgramPtr& program, float fov, float aspect, int slices, int stacks) {
     using namespace oglplus;
     return ShapeWrapperPtr(
         new shapes::ShapeWrapper({ "Position", "TexCoord" }, SphereSection(fov, aspect, slices, stacks), *program)
@@ -391,7 +391,7 @@ struct TextureInfo {
 typedef std::map<QUrl, TextureInfo> TextureMap;
 typedef TextureMap::iterator TextureMapItr;
 
-ImagePtr loadImage(const QString& path, bool flip) {
+void loadImage(const QString& path, ImagePtr& imagePtr, bool flip) {
     QImage image = QImage(path).mirrored(false, true);
     image = QGLWidget::convertToGLFormat(image);
     using namespace oglplus;
@@ -401,8 +401,8 @@ ImagePtr loadImage(const QString& path, bool flip) {
     if (image.hasAlphaChannel()) {
         format = PixelDataFormat::RGBA;
     }
-    return ImagePtr(new oglplus::images::Image(width, height, 1, 3,
-        image.constBits(), format, PixelDataInternalFormat::RGBA8));
+    imagePtr = std::make_shared<oglplus::images::Image>(width, height, 1, 3,
+        image.constBits(), format, PixelDataInternalFormat::RGBA8);
 }
 
 TextureMap & getTextureMap() {
@@ -467,7 +467,7 @@ TexturePtr load2dTexture(const QString& path, uvec2 & outSize) {
     return result;
 }
 
-TexturePtr loadCubemapTexture(std::function<ImagePtr(int)> dataLoader) {
+TexturePtr loadCubemapTexture(std::function<QImage(int face)> dataLoader) {
     using namespace oglplus;
     TexturePtr result = TexturePtr(new Texture());
     Context::Bound(TextureTarget::CubeMap, *result)
@@ -476,29 +476,26 @@ TexturePtr loadCubemapTexture(std::function<ImagePtr(int)> dataLoader) {
         .WrapS(TextureWrap::ClampToEdge)
         .WrapT(TextureWrap::ClampToEdge)
         .WrapR(TextureWrap::ClampToEdge);
-
-    glm::uvec2 size;
     for (int i = 0; i < 6; ++i) {
-        ImagePtr image = dataLoader(i);
-        if (!image) {
-            continue;
-        }
-        Texture::Image2D(Texture::CubeMapFace(i), *image);
+        QImage image = dataLoader(i);
+        image = QGLWidget::convertToGLFormat(image);
+        PixelDataFormat format = PixelDataFormat::RGB;
+        if (image.hasAlphaChannel()) { format = PixelDataFormat::RGBA; }
+        Texture::Image2D(Texture::CubeMapFace(i), 0, PixelDataInternalFormat::RGBA8, image.width(), image.height(), 0, format, PixelDataType::UnsignedByte, image.constBits());
     }
     return result;
 }
 
 
-ShapeWrapperPtr loadSkybox(ProgramPtr program) {
+ShapeWrapperPtr loadSkybox(const ProgramPtr& program) {
     using namespace oglplus;
     ShapeWrapperPtr shape = ShapeWrapperPtr(
-
         new shapes::ShapeWrapper(std::initializer_list<const char*>{"Position"}, shapes::SkyBox(),
         *program));
     return shape;
 }
 
-ShapeWrapperPtr loadPlane(ProgramPtr program, float aspect) {
+ShapeWrapperPtr loadPlane(const ProgramPtr& program, float aspect) {
     using namespace oglplus;
     Vec3f a(1, 0, 0);
     Vec3f b(0, 1, 0);

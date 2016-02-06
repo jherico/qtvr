@@ -18,14 +18,8 @@ limitations under the License.
 ************************************************************************************/
 
 #pragma once
+
 #include <QtCore/QObject>
-
-#include <gl/OglplusHelpers.h>
-#include <GLMHelpers.h>
-
-#include "Shadertoy.h"
-
-class QJsonValue;
 
 struct Input : public QObject {
 public:
@@ -46,7 +40,12 @@ public:
     Q_ENUMS(Filter)
     Q_ENUMS(Wrap)
 
+    
 public:
+    static Type toType(const QVariant& value);
+    static Filter toFilter(const QVariant& value);
+    static Wrap toWrap(const QVariant& value);
+
     Input(QObject* parent = nullptr) : QObject(parent) {}
     QString src;
     int channel{ -1 };
@@ -56,21 +55,5 @@ public:
     Filter filter{ NEAREST };
     bool srgb{ false };
 
-    bool parse(const QJsonValue& renderpass);
-
-    //struct {
-    //    oglplus::TextureMinFilter minFilter{ oglplus::TextureMinFilter::Nearest };
-    //    oglplus::TextureMagFilter magFilter{ oglplus::TextureMagFilter::Nearest };
-    //    oglplus::TextureWrap wrap{ oglplus::TextureWrap::ClampToEdge };
-    //    bool flip{ true };
-    //    bool srgb{ false };
-    //    oglplus::PixelDataType format{ oglplus::PixelDataType::Byte };
-    //} sampler;
-    //TexturePtr texture;
-    //oglplus::TextureTarget target{ oglplus::TextureTarget::_2D };
-    //vec3 resolution;
-    //uvec2 size;
-    //void bind(int channel);
+    bool parse(const QVariant& renderpass);
 };
-
-//Input::Pointer getTexture(const QVariantMap& input);

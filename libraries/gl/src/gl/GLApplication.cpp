@@ -60,12 +60,6 @@ GLApplication::~GLApplication() {
 }
 
 void GLApplication::initializeGL() {
-    static QTimer timer;
-    timer.setInterval(1000);
-    connect(&timer, &QTimer::timeout, [this] {
-        postEvent(this, new QEvent((QEvent::Type)CustomEventTypes::Render), Qt::HighEventPriority);
-    });
-    timer.start();
 }
 
 void GLApplication::internalPaintGL() {
@@ -145,4 +139,8 @@ QOpenGLContext* GLApplication::getPrimaryRenderingContext() {
 
 bool GLApplication::makePrimaryRenderingContextCurrent() {
     return _window->makeCurrent();
+}
+
+bool GLApplication::isActive() const {
+    return _window && _window->isActive();
 }

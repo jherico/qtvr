@@ -17,33 +17,30 @@ limitations under the License.
 
 ************************************************************************************/
 
-#include "ShaderModel.h"
-#include <QDebug>
+#pragma once
 
-ShaderModel::ShaderModel() {
-    _cache = new Cache("C:/Users/brad/git/shadertoys/");
-}
+#include <QtCore/QObject>
+#include <QQmlListProperty>
 
-int ShaderModel::rowCount(const QModelIndex & parent) const {
-    return _cache->_shaders.size();
-}
+#include "Input.h"
 
-QVariant ShaderModel::data(const QModelIndex & index, int role) const {
-    auto shader = _cache->_shaders[index.row()];
-    switch (role) {
-    case IdRole:
-        return shader->id;
-    case ShaderRole:
-        return QVariant::fromValue(shader);
-    default:
-        qDebug() << "Huh?";
-    }
-    return QVariant("Hello");
-}
+struct Renderpass : public QObject {
+public:
+    enum Output { IMAGE, BUFFER_A, BUFFER_B, BUFFER_C, BUFFER_D, SOUND };
 
-QHash<int, QByteArray> ShaderModel::roleNames() const {
-    QHash<int, QByteArray> roles;
-    roles[IdRole] = "modelShaderId";
-    roles[ShaderRole] = "modelShader";
-    return roles;
-}
+private:
+    Q_OBJECT
+    Q_PROPERTY(QString code MEMBER code CONSTANT)
+    Q_PROPERTY(Output output MEMBER output CONSTANT)
+    Q_PROPERTY(QQmlListProperty<Input> inputs READ inputs CONSTANT)
+    Q_ENUMS(Output)
+public:
+    Renderpass(QObject* parent = nullptr) : QObject(parent) {}
+    QString code;
+    Output output { IMAGE };
+
+    QQmlListProperty<Input> inputs() { return QQmlListProperty<Input>(this, _inputs); }
+    bool parse(const QVariant& var); 
+
+    QList<Input*> _inputs;
+};
