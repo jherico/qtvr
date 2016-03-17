@@ -5,7 +5,7 @@ include(ExternalProject)
 ExternalProject_Add(
     ${EXTERNAL_NAME}
     URL https://github.com/jherico/vkcpp/archive/master.zip
-    URL_MD5 1ede613de5b3596d7530d4706c546d5b
+    #URL_MD5 1ede613de5b3596d7530d4706c546d5b
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
     INSTALL_COMMAND ""

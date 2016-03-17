@@ -7,7 +7,7 @@
 macro(TARGET_VULKAN)
     add_dependency_external_projects(vkcpp)
 
-    set(VULKAN_SDK "C:/VulkanSDK/1.0.3.1")
+    set(VULKAN_SDK "C:/VulkanSDK/1.0.5.0")
     list(APPEND INCLUDE_DIRS ${VULKAN_SDK}/Include)
     list(APPEND INCLUDE_DIRS ${VULKAN_SDK}/glslang)
     set(VULKAN_INCLUDE_DIRS ${INCLUDE_DIRS} CACHE TYPE INTERNAL)
