@@ -84,7 +84,7 @@ void GLApplication::internalPaintGL() {
     uint64_t diff = now - lastPaintBegin;
     float instantaneousFps = 0.0f;
     if (diff != 0) {
-        instantaneousFps = (float)USECS_PER_SECOND / (float)diff;
+        _lastInstantaneousFps = (float)USECS_PER_SECOND / (float)diff;
         _framesPerSecond.updateAverage(_lastInstantaneousFps);
     }
 
@@ -124,6 +124,7 @@ void GLApplication::resizeGL() {
 bool GLApplication::event(QEvent* event) {
     if ((int)event->type() == (int)Render) {
         internalPaintGL();
+        return true;
     }
 
     return HifiApplication::event(event);

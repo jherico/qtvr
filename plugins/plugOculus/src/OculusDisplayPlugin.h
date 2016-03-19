@@ -7,21 +7,21 @@
 //
 #pragma once
 
-#include "OculusBaseDisplayPlugin.h"
-
 #include <QtCore/QSharedPointer>
+
+#include "OculusBaseDisplayPlugin.h"
+#include "OculusHelpers.h"
+
 
 struct SwapFramebufferWrapper;
 using SwapFboPtr = QSharedPointer<SwapFramebufferWrapper>;
-struct MirrorFramebufferWrapper;
-using MirrorFboPtr = QSharedPointer<MirrorFramebufferWrapper>;
 
 const float TARGET_RATE_Oculus = 75.0f;
 
 class OculusDisplayPlugin : public OculusBaseDisplayPlugin {
 public:
     virtual void activate() override;
-    virtual const QString & getName() const override;
+    virtual const QString& getName() const override { return NAME; }
     virtual void setEyeRenderPose(uint32_t frameIndex, Eye eye, const glm::mat4& pose) override final;
 
     virtual float getTargetFrameRate() override { return TARGET_RATE_Oculus; }
@@ -38,7 +38,6 @@ private:
     bool _monoPreview { true };
     QMap<uint32_t, EyePoses> _frameEyePoses;
 
-    MirrorFboPtr     _mirrorFbo;
     SwapFboPtr       _sceneFbo;
     SwapFboPtr       _overlayFbo;
     ovrLayerHeader*  _layers[2];

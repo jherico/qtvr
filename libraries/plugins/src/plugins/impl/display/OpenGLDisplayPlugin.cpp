@@ -191,7 +191,6 @@ void OpenGLDisplayPlugin::activate() {
     _vsyncSupported = true; // _container->getPrimaryWindow()->isVsyncSupported();
 
 #if THREADED_PRESENT
-    _timer.start(1);
     // Start the present thread if necessary
     auto presentThread = DependencyManager::get<PresentThread>();
     if (!presentThread) {
@@ -225,7 +224,6 @@ void OpenGLDisplayPlugin::deactivate() {
         Lock lock(_mutex);
         _deactivateWait.wait(lock, [&]{ return _uncustomized; });
     }
-    _timer.stop();
 #else
     qApp->getWindow()->makeCurrent();
     uncustomizeContext();

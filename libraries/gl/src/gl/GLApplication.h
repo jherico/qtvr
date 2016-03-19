@@ -43,14 +43,14 @@ public:
     float getLastInstanteousFps() const { return _lastInstantaneousFps; }
     float getLastUnsynchronizedFps() const { return _lastUnsynchronizedFps; }
 
+    virtual QOpenGLContext* getPrimaryRenderingContext();
+    virtual bool makePrimaryRenderingContextCurrent();
 protected:
     virtual void initializeGL();
     virtual void prePaintGL();
     virtual void paintGL();
     virtual void resizeGL();
     virtual void submitGL();
-    virtual QOpenGLContext* getPrimaryRenderingContext();
-    virtual bool makePrimaryRenderingContextCurrent();
 
 
     bool _inPaint { false };

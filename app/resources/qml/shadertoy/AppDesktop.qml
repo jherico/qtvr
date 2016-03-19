@@ -100,6 +100,14 @@ Desktop {
         renderer.build();
     }
 
+    Stats {
+        id: stats;
+        visible: false;
+    }
+
+    function toggleStats() {
+        stats.visible = !stats.visible;
+    }
 
     Browser {
         id: browser;

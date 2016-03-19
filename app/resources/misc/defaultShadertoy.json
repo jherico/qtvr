@@ -1,0 +1,45 @@
+{
+    "Shader": 
+    {
+        "ver": "0.1",
+        "info": 
+        {
+            "id": "default",
+            "date": "0",
+            "viewed": 0,
+            "name": "Default Shader",
+            "username": "jherico",
+            "description": "Just a default shader",
+            "likes": 0,
+            "published": 0,
+            "flags": 0,
+            "hasliked": 0,
+            "tags": 
+            [
+                
+            ]
+        },
+
+        "renderpass": 
+        [
+            {
+                "inputs": 
+                [
+                    
+                ],
+
+                "outputs": 
+                [
+                    {
+                        "channel": "0"
+                    }
+                ],
+
+                "code": "\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\r\n\/\/ INFO:\r\n\/\/ - use the mouse to navigate (x is rotation, y is zoom)\r\n\/\/ - play with the defines below to change the visuals\r\n\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\r\n\r\n\/\/ the more slices the slower\r\n#define SLICES \t\t\t12.0\r\n\/\/ start amplitude for the noise\r\n#define START_AMPLITUDE\t0.01\r\n\/\/ start frequency for the noise\r\n#define START_FREQUENCY\t1.25\r\n\/\/ start density value\r\n#define START_DENSITY\t0.0\r\n\/\/ animation speed\r\n#define ANIMATION_SPEED 0.075\r\n\r\n\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\r\n\/\/ iq\'s 3d noise functions from the elevated shader (incl. modifications where needed)\r\n\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\r\n\r\n\/\/ rotation matrix for fbm octaves\r\nmat3 m = mat3( 0.00,  0.80,  0.60,\r\n              -0.80,  0.36, -0.48,\r\n              -0.60, -0.48,  0.64 );\r\n\r\nfloat hash( float n )\r\n{\r\n    return fract(sin(n)*43758.5453123);\r\n}\r\n\r\n\/\/ 3d noise function\r\nfloat noise( in vec3 x )\r\n{\r\n    vec3 p = floor(x);\r\n    vec3 f = fract(x);\r\n    f = f*f*(3.0-2.0*f);\r\n    float n = p.x + p.y*57.0 + 113.0*p.z;\r\n    float res = mix(mix(mix( hash(n+  0.0), hash(n+  1.0),f.x),\r\n                        mix( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y),\r\n                    mix(mix( hash(n+113.0), hash(n+114.0),f.x),\r\n                        mix( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);\r\n    return res;\r\n}\r\n\r\n\/\/ fbm noise for 2-4 octaves including rotation per octave\r\nfloat fbm( vec3 p )\r\n{\r\n    float f = 0.0;\r\n    f += 0.5000*noise( p );\r\n\tp = m*p*2.02;\r\n    f += 0.2500*noise( p ); \r\n\/\/ set to 1 for 2 octaves\t\r\n#if 0\t\r\n\treturn f\/0.75;\r\n#else\t\r\n\tp = m*p*2.03;\r\n    f += 0.1250*noise( p );\r\n\/\/ set to 1 for 3 octaves, 0 for 4 octaves\t\r\n#if 1\t\r\n\treturn f\/0.875;\r\n#else\t\r\n\tp = m*p*2.01;\r\n    f += 0.0625*noise( p );\r\n    return f\/0.9375;\r\n#endif\t\r\n#endif\t\r\n}\r\n\r\n\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\r\n\r\n\/\/ color gradient\r\nvec3 gradient(float s)\r\n{\r\n\t\/\/return vec3(0.0, max(1.0-s*2.0, 0.0), 0.0);\r\n    return vec3(0.0, max(1.0-s*2.0, 0.0), max(s>0.5?1.0-(s-0.5)*5.0:1.0, 0.0));\r\n}\r\n\r\n\/\/ intersection for a sphere with a ray\r\n#define RADIUS 0.5\r\nbool intersectSphere(vec3 origin, vec3 direction, out float tmin, out float tmax)\r\n{\r\n    bool hit = false;\r\n\tfloat a = dot(direction, direction);\r\n    float b = 2.0*dot(origin, direction);\r\n    float c = dot(origin, origin) - 0.5*0.5;\r\n    float disc = b*b - 4.0*a*c;           \/\/ discriminant\r\n    tmin = tmax = 0.0;\r\n\r\n    if (disc > 0.0) {\r\n        \/\/ Real root of disc, so intersection\r\n        float sdisc = sqrt(disc);\r\n        float t0 = (-b - sdisc)\/(2.0*a);          \/\/ closest intersection distance\r\n        float t1 = (-b + sdisc)\/(2.0*a);          \/\/ furthest intersection distance\r\n\r\n\t\ttmax = t1;\r\n        if (t0 >= 0.0) \r\n            tmin = t0;\r\n        hit = true;\r\n    }\r\n\r\n    return hit;\r\n}\r\n\r\n\/\/ rotate around axis\r\nvec2 rt(vec2 x,float y)\r\n{\r\n\treturn vec2(cos(y)*x.x-sin(y)*x.y,sin(y)*x.x+cos(y)*x.y);\r\n}\r\n\r\n\r\nvec3 color(in vec3 o, in vec3 d) {\r\n    vec3 col;\r\n\tfloat tmin, tmax;\r\n\tif (intersectSphere(o, d, tmin, tmax))\r\n\t{\t\r\n\t\t\/\/ step thoug the sphere with max SLICES steps\r\n\t\tfor (float i = 0.0; i < SLICES; i+=1.0)\r\n\t\t{\r\n\t\t\t\/\/ stay within the sphere bounds\r\n\t\t\tfloat t = tmin+i\/SLICES;\r\n\t\t\tif (t > tmax) \r\n\t\t\t\tbreak;\r\n\t\t\tvec3 curpos = o + d*t;\r\n\t\t\t\r\n\t\t\t\/\/ get sphere falloff in s\r\n\t\t\tfloat s = (0.5-length(curpos))*2.0;\r\n\t\t\ts*=s;\r\n\r\n\t\t\t\/\/ get turbulence in d\r\n\t\t\tfloat a = START_AMPLITUDE;\r\n\t\t\tfloat b = START_FREQUENCY;\r\n\t\t\tfloat d = START_DENSITY;\r\n\t\t\tfor (int j = 0; j < 3; j++)\t\t\t\t\t\t\t\t\t\r\n\t\t\t{\r\n\t\t\t\td += 0.5\/abs((fbm(5.0*curpos*b+ANIMATION_SPEED*iGlobalTime\/b)*2.0-1.0)\/a);\r\n\t\t\t\tb *= 2.0;\r\n\t\t\t\ta \/= 2.0;\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\t\/\/ get gradient color depending on s\r\n\t\t\tcol.rgb += gradient(s)*max(d*s,0.0);\r\n\t\t}\t\t\r\n\t}\r\n    return col;\r\n}\r\n\r\n\r\n\/\/ shader main function\r\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\r\n{\r\n\t\/\/ normalized and aspect ratio corrected pixel coordinate\r\n    vec2 p = (fragCoord.xy \/ iResolution.xy)*2.0-1.0;\r\n    p.x *= iResolution.x\/ iResolution.y;\r\n\r\n\t\/\/ camera and user input\r\n\tvec3 oo = vec3(0, 0, 1.0-iMouse.y\/iResolution.y);\r\n\tvec3 od = normalize(vec3(p.x, p.y, -2.0));\r\n\tvec3 o,d;\t\r\n\to.xz = rt(oo.xz, 6.3*iMouse.x\/iResolution.x);\r\n\to.y = oo.y;\r\n\td.xz = rt(od.xz, 6.3*iMouse.x\/iResolution.x);\r\n\td.y = od.y;\r\n\r\n    o = vec3(0.0);\r\n\t\/\/ render\r\n\tfragColor = vec4(color(o, d), 1.0);\r\n}\r\n\r\nvoid mainVR( out vec4 fragColor, in vec2 fragCoord, in vec3 fragRayOri, in vec3 fragRayDir ) {\r\n    fragColor = vec4(color(fragRayOri / 10.0, fragRayDir), 1.0);\r\n}\r\n",
+                "name": "",
+                "description": "",
+                "type": "image"
+            }
+        ]
+    }
+}

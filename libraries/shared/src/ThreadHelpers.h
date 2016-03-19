@@ -15,6 +15,8 @@
 #include <QMutex>
 #include <QMutexLocker>
 
+#include "HifiApplication.h"
+
 template <typename L, typename F>
 void withLock(L lock, F function) {
     throw std::exception();
@@ -25,5 +27,18 @@ void withLock(QMutex& lock, F function) {
     QMutexLocker locker(&lock);
     function();
 }
+
+class LambdaEvent : public QEvent {
+    std::function<void()> _fun;
+public:
+    LambdaEvent(const std::function<void()> & fun) :
+        QEvent(static_cast<QEvent::Type>(HifiApplication::Lambda)), _fun(fun) {
+    }
+    LambdaEvent(std::function<void()> && fun) :
+        QEvent(static_cast<QEvent::Type>(HifiApplication::Lambda)), _fun(fun) {
+    }
+    void call() { _fun(); }
+};
+
 
 #endif

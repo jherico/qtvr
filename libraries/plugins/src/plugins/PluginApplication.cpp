@@ -296,7 +296,20 @@ const DisplayPluginPointer PluginApplication::getActiveDisplayPlugin() const {
 void PluginApplication::updateDisplayMode() {
     auto displayPlugins = PluginManager::getInstance()->getDisplayPlugins();
     // Default to the first item on the list, in case none of the menu items match
-    static DisplayPluginPointer primaryDisplayPlugin = displayPlugins.at(0);
+    static DisplayPluginPointer primaryDisplayPlugin;
+    if (!primaryDisplayPlugin) {
+        if (!_fixedPlugin.isEmpty()) {
+            for (auto plugin : displayPlugins) {
+                if (plugin->getName() == _fixedPlugin) {
+                    primaryDisplayPlugin = plugin;
+                    break;
+                }
+            }
+        }
+        if (!primaryDisplayPlugin) {
+            primaryDisplayPlugin = displayPlugins.at(0);
+        }
+    }
    
     if (!_newDisplayPlugin) {
         _newDisplayPlugin = primaryDisplayPlugin;

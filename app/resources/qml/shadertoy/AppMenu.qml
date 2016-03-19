@@ -34,6 +34,16 @@ Menu {
         }
     }
 
+    MenuItem {
+        id: statsItem
+        action: Action {
+            checkable: true
+            checked: desktop.stats.visible
+            text: "Stats"
+            onTriggered: desktop.toggleStats()
+        }
+    }
+
     Menu {
         id: displayMenu
         title: "Display"

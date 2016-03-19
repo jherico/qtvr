@@ -96,6 +96,8 @@ protected:
     DisplayPluginPointer _newDisplayPlugin;
     FboCache _fboCache;
     bool _pendingPaint { false };
+    QString _fixedPlugin { "Oculus Rift" };
+
 };
 
 #if defined(qApp)

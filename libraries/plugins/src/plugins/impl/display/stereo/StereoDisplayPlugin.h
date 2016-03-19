@@ -20,7 +20,7 @@ public:
     virtual void deactivate() override;
 
     virtual float getRecommendedAspectRatio() const override;
-    virtual glm::mat4 getProjection(Eye eye, const glm::mat4& baseProjection) const override;
+    glm::mat4 getEyeProjection(Eye eye, const glm::mat4& baseProjection) const override;
     
     // NOTE, because Stereo displays don't include head tracking, and therefore 
     // can't include roll or pitch, the eye separation is embedded into the projection

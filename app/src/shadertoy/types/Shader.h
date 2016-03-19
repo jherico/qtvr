@@ -31,9 +31,13 @@ class Shader : public QObject {
     Q_PROPERTY(ShaderInfo* info MEMBER info CONSTANT);
     Q_PROPERTY(QQmlListProperty<Renderpass> renderpass READ renderpass CONSTANT);
 public:
+    static Shader* parseJson(const QJsonValue& var, QObject* parent = nullptr);
+    static Shader* parseString(const QString& json, QObject* parent = nullptr);
+    static Shader* parseFile(const QString& json, QObject* parent = nullptr);
+
     Shader(QObject* parent = nullptr) : QObject(parent) {}
     ShaderInfo* info{ nullptr };
+    bool parse(const QVariantMap& data);
     QQmlListProperty<Renderpass> renderpass();
-    bool parse(const QVariant& var);
     QList<Renderpass*> _renderpass;
 };

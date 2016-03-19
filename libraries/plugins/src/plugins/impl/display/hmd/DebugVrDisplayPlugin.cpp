@@ -24,9 +24,9 @@ DebugVrDisplayPlugin::DebugVrDisplayPlugin() {
     _eyeProjections[2][2] = vec4(0, 0, -1.00000489, -1);
     _eyeProjections[2][3] = vec4(0, 0, -0.0800003856, 0);
 
-    _desiredFramebufferSize = uvec2(2364, 1464);
-    _eyeOffsets[0] = vec3(-0.0306320004, 0, -0.000601001084);
-    _eyeOffsets[1] = vec3(0.0306320004, 0, -0.000601001084);
+    _renderTargetSize = uvec2(2364, 1464);
+    _eyeOffsets[0] = glm::translate(mat4(), vec3(-0.0306320004, 0, -0.000601001084));
+    _eyeOffsets[1] = glm::translate(mat4(), vec3(0.0306320004, 0, -0.000601001084));
 }
 
 bool DebugVrDisplayPlugin::isSupported() const {
@@ -35,18 +35,6 @@ bool DebugVrDisplayPlugin::isSupported() const {
 #else
     return false;
 #endif
-}
-
-mat4 DebugVrDisplayPlugin::getProjection(Eye eye, const glm::mat4& baseProjection) const {
-    return _eyeProjections[eye];
-}
-
-uvec2 DebugVrDisplayPlugin::getRecommendedRenderSize() const {
-    return _desiredFramebufferSize;
-}
-
-mat4 DebugVrDisplayPlugin::getHeadPose(uint32_t frameIndex) const {
-    return mat4();
 }
 
 static const QString NAME("DebugVR");

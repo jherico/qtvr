@@ -13,7 +13,7 @@
 #include "impl/display/stereo/SideBySideStereoDisplayPlugin.h"
 #include "impl/display/stereo/InterleavedStereoDisplayPlugin.h"
 #include "impl/display/Basic2DWindowOpenGLDisplayPlugin.h"
-#include "impl/display/DebugVrDisplayPlugin.h"
+#include "impl/display/hmd/DebugVrDisplayPlugin.h"
 
 const QString& DisplayPlugin::MENU_PATH() {
     static const QString value = "Display";

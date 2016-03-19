@@ -60,10 +60,8 @@ QVariant Cache::getShader(const QString& shaderId) const {
 }
 
 QVariant Cache::setShader(const QString& shaderId, const QString& shaderJson) {
-    auto shader = new Shader(this);
-    auto doc = jsonFromString(shaderJson);
-    if (!shader->parse(doc.object().value("Shader"))) {
-        delete shader;
+    auto shader = Shader::parseString(shaderJson, this);
+    if (!shader) {
         return QVariant();
     }
     _shadersById[shader->info->id] = shader;

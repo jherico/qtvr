@@ -18,11 +18,14 @@ limitations under the License.
 ************************************************************************************/
 
 #pragma once
+#include <atomic>
+
 #include <QtCore/QObject>
 #include <QtCore/QElapsedTimer>
 
 #include <gl/OglplusHelpers.h>
 #include <GLMHelpers.h>
+#include <gl/ThreadedGLCanvas.h>
 
 #include "Shadertoy.h"
 #include "types/Input.h"
@@ -34,9 +37,11 @@ namespace shadertoy {
 
     class Renderer : public QObject {
         Q_OBJECT;
-        //XQ_PROPERTY(Shader* shader READ shader WRITE setShader);
-        //XQ_PROPERTY(QSize size MEMBER _size NOTIFY sizeChanged);
-        //XQ_PROPERTY(float scale MEMBER _scale NOTIFY scaleChanged);
+        //Q_PROPERTY(QSize size MEMBER _size NOTIFY sizeChanged);
+        Q_PROPERTY(float scale MEMBER _renderScale NOTIFY scaleChanged);
+        Q_PROPERTY(float fps MEMBER _fps NOTIFY fpsChanged);
+        Q_PROPERTY(int pixels MEMBER _pixels NOTIFY pixelsChanged);
+        Q_PROPERTY(int gpuFrameTime MEMBER _gpuFrameTime NOTIFY gpuFrameTimeChanged);
 
     signals:
         void compileError(const QString & source);
@@ -44,7 +49,10 @@ namespace shadertoy {
         void compileSuccess();
         void sizeChanged();
         void scaleChanged();
-        
+        void fpsChanged();
+        void pixelsChanged();
+        void gpuFrameTimeChanged();
+
     public slots:
         void build();
         void setShader(const QVariant& shader);
@@ -63,10 +71,11 @@ namespace shadertoy {
         void setShader(Shader* newShader);
         void setShaderCode(Renderpass::Output output, const QString& code);
 
-        void setSize(const QSize& size);
+        void setTargetResolution(const uvec2& targetResolution);
         void setScale(float scale);
 
     protected:
+        void setRenderScale(float newScale);
         void updateUniforms();
         void initTextureCache();
         void resize();
@@ -78,7 +87,9 @@ namespace shadertoy {
         // from a preset or created or edited by the user
         bool _resolutionDirty { true };
         // The size of the output framebuffer
-        uvec2 _size;
+        uvec2 _targetResolution;
+        bool _targetResolutionDirty { true };
+        int _targetGpuTime { 0 };
         // The current rendering resolution (_size * _scale)
         uvec2 _renderResolution;
         // Equal to or half the width of the render resolution (depending on stereo settings)
@@ -87,9 +98,13 @@ namespace shadertoy {
         // The shadertoy rendering resolution scale.  1.0 means full resolution
         // as defined by the Oculus SDK as the ideal offscreen resolution
         // pre-distortion
-        float _renderScale { 0.5 };
+        float _renderScale { 0.5f };
 
-        float _hmdScale { 1.0 };
+        float _hmdScale { 1.0f };
+        float _fps { 0.0f };
+        int _gpuFrameTime { 0 };
+        int _pixels { 0 };
+        int _targetFramerate { 60 };
 
         // The shadertoy rendering resolution scale.  1.0 means full resolution
         // as defined by the Oculus SDK as the ideal offscreen resolution
@@ -99,6 +114,9 @@ namespace shadertoy {
 
         QByteArray _shadertoyInputs;
         QByteArray _keyboardState;
+        ThreadedGLCanvas* _backgroundContext { nullptr };
+        std::atomic<bool> _texturesLoaded { false };
+
         vec4 _mouse { 0 };
 
         // UBO container
@@ -116,6 +134,7 @@ namespace shadertoy {
         // Simple 2D plane rendering
         ProgramPtr _planeProgram;
         ShapeWrapperPtr _plane;
+        std::shared_ptr<oglplus::Query> _query;
     };
 
 }

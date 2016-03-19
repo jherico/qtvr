@@ -104,8 +104,7 @@ void Application::paintGL() {
 void Application::resizeGL() {
     PluginApplication::resizeGL();
     auto displayPlugin = getActiveDisplayPlugin();
-    auto size = displayPlugin->getRecommendedRenderSize();
-    _renderer.setSize(QSize(size.x, size.y));
+    _renderer.setTargetResolution(displayPlugin->getRecommendedRenderSize());
 };
 
 

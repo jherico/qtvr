@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
     app.setOrganizationDomain("somecompany.com");
     app.setApplicationName("Amazing Application");
     QDir::setCurrent(getRelativeDir(".."));
-    QGuiApplication::setOverrideCursor(Qt::BlankCursor);
+    //QGuiApplication::setOverrideCursor(Qt::BlankCursor);
     QtWebEngine::initialize();
 
 

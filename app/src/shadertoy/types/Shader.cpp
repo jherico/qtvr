@@ -22,12 +22,32 @@ limitations under the License.
 #include <QJsonObject>
 #include <QJsonArray>
 
+#include <shared/JSONHelpers.h>
+#include <FileUtils.h>
+
 QQmlListProperty<Renderpass> Shader::renderpass() {
     return QQmlListProperty<Renderpass>(this, _renderpass);
 }
 
-bool Shader::parse(const QVariant& var) {
-    auto varMap = var.toMap();
+Shader* Shader::parseFile(const QString& var, QObject* parent) {
+    return parseString(FileUtils::readFileToString(var), parent);
+}
+
+Shader* Shader::parseString(const QString& var, QObject* parent) {
+    auto doc = jsonFromString(var);
+    return parseJson(doc.object().value("Shader"), parent);
+}
+
+Shader* Shader::parseJson(const QJsonValue& var, QObject* parent) {
+    Shader* result = new Shader(parent);
+    if (!result->parse(var.toVariant().toMap())) {
+        delete result;
+        return nullptr;
+    }
+    return result;
+}
+
+bool Shader::parse(const QVariantMap& varMap) {
     info = new ShaderInfo(this);
     if (!info->parse(varMap["info"])) {
         return false;

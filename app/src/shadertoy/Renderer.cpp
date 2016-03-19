@@ -19,12 +19,17 @@ limitations under the License.
 
 #include "Renderer.h"
 
+#include <QtCore/QRegularExpression>
+#include <QtCore/QThreadPool>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 #include <QtGui/QOpenGLContext>
 #include <QtGui/QOpenGLFunctions>
-#include <QtCore/QRegularExpression>
 #include <QGLWidget>
 
+#include <PathUtils.h>
 #include <gl/GLWindow.h>
+#include <gl/OffscreenGLCanvas.h>
 #include <plugins/DisplayPlugin.h>
 #include <MatrixStack.h>
 #include <FileUtils.h>
@@ -65,7 +70,6 @@ void main() {
 }
 )SHADER";
 
-
 static const char* const SHADER_HEADER = R"SHADER(#version 450 core
 layout (binding = 1, std140) uniform Shadertoy
 {
@@ -103,9 +107,9 @@ void main() {
 //void mainVR( out vec4 fragColor, in vec2 fragCoord, in vec3 fragRayOri, in vec3 fragRayDir );
 static const char * FOOTER_VR = R"SHADER(
 layout (location = 3) uniform vec3 RayOrigin = vec3(0.0, 0.0, 0.0);
-
+layout (location = 4) uniform vec2 FragCoordOffset = vec2(0.0, 0.0);
 void main() {
-    vec2 fragCoord = gl_FragCoord.xy;
+    vec2 fragCoord = gl_FragCoord.xy + FragCoordOffset;
     if (fragCoord.x > iResolution.x) {
         fragCoord.x -= iResolution.x;
     } 
@@ -119,6 +123,8 @@ static const char * SIMPLE_TEXTURED_VS = R"VS(#version 450 core
 layout(location = 0) uniform mat4 Projection = mat4(1);
 layout(location = 1) uniform mat4 ModelView = mat4(1);
 
+layout(location = 8) uniform  float uTextureScale = 1.0;
+
 in vec3 Position;
 in vec2 TexCoord;
 
@@ -126,7 +132,7 @@ out vec2 vTexCoord;
 
 void main() {
   gl_Position = Projection * ModelView * vec4(Position, 1);
-  vTexCoord = TexCoord;
+  vTexCoord = TexCoord * uTextureScale;
 }
 
 )VS";
@@ -177,7 +183,11 @@ static const QStringList TEXTURES({
     "/presets/tex12.png",
     "/presets/tex14.png",
     "/presets/tex15.png",
-    "/presets/tex16.png"
+    "/presets/tex16.png",
+    "/presets/tex17.jpg",
+    "/presets/tex18.jpg",
+    "/presets/tex19.png",
+    "/presets/tex20.jpg",
 });
 
 static const QStringList CUBEMAPS({
@@ -202,12 +212,10 @@ static const QString WEBCAM = "webcam";
 
 using namespace shadertoy;
 
-
 struct CachedTexture {
     uvec2 resolution;
     TexturePair textures;
 };
-
 
 QHash<QString, CachedTexture> cachedTextures;
 
@@ -326,7 +334,6 @@ struct InputGL {
     }
 };
 
-
 struct RenderpassGL {
     Renderpass* renderpass { nullptr };
     ProgramPtr program;
@@ -397,6 +404,7 @@ struct RenderpassGL {
             replace(QRegExp("\\t"), "  ").
             replace(QRegExp("\\bgl_FragColor\\b"), "FragColor").
             replace(QRegExp("\\bfilter\\b"), "filter_").
+            replace(QRegExp("\\bsmooth\\b"), "smooth_").
             replace(QRegExp("\\btexture2D\\b"), "texture").
             replace(QRegExp("\\bchar\\b"), "char_").
             replace(QRegExp("\\btextureCube\\b"), "texture");
@@ -463,152 +471,6 @@ void Renderer::setShader(const QVariant& shader) {
     _shader = qvariant_cast<::Shader*>(shader);
 }
 
-void Renderer::resize() {
-    PROFILE_RANGE(__FUNCTION__);
-    if (!_size.x || !_size.y) {
-        return;
-    }
-
-    auto oldRenderResolution = _renderResolution;
-    auto displayPlugin = qApp->getActiveDisplayPlugin();
-    auto targetResolution = _size;
-    if (displayPlugin->isHmd() && !currentShadertoy->vrShader) {
-        targetResolution = uvec2(800, 450);
-        _renderScale = 1.0f;
-    }
-    _eyeRenderResolution = _renderResolution = uvec2(vec2(targetResolution) * _renderScale);
-    if (currentShadertoy && currentShadertoy->vrShader && displayPlugin->isHmd()) {
-        _renderScale = 0.5f;
-        _eyeRenderResolution.x /= 2;
-    }
-
-    
-    using namespace oglplus;
-    if (_renderResolution != oldRenderResolution) {
-        for (int i = 0; i < BUFFERS.size(); ++i) {
-            auto& cachedTexture = cachedTextures[BUFFERS.at(i)];
-            cachedTexture.resolution = _renderResolution;
-            for (int j = 0; j < 2; ++j) {
-                Context::Bound(TextureTarget::_2D, *cachedTexture.textures[j])
-                    .Image2D(0, PixelDataInternalFormat::RGBA16F, _renderResolution.x, _renderResolution.y, 0, PixelDataFormat::RGBA, PixelDataType::Float, nullptr);
-            }
-        }
-
-        Context::Bound(TextureTarget::_2D, *_imageTexture)
-            .MinFilter(TextureMinFilter::Nearest)
-            .Image2D(0, PixelDataInternalFormat::RGBA, _renderResolution.x, _renderResolution.y, 0, PixelDataFormat::RGBA, PixelDataType::Float, nullptr);
-
-        if (currentShadertoy) {
-            for (auto& pass : currentShadertoy->passes) {
-                for (auto& input : pass.inputs) {
-                    if (input.input && input.input->ctype == Input::BUFFER) {
-                        input.resolution = vec3(_renderResolution, 1.0f);
-                    }
-                }
-            }
-        }
-    }
-    _shaderFrame = 0;
-}
-
-void Renderer::render() {
-    if (!currentShadertoy || !_size.x || !_size.y) {
-        return;
-    }
-
-    if (_resolutionDirty) {
-        resize();
-        _resolutionDirty = false;
-    }
-
-    auto displayPlugin = qApp->getActiveDisplayPlugin();
-
-    // Use odd textures as buffer inputs
-    bool even = 0 == (_shaderFrame % 2);
-    updateUniforms();
-
-    auto& mv = Stacks::modelview();
-    auto& pr = Stacks::projection();
-
-    using namespace oglplus;
-    {
-        PROFILE_RANGE(__FUNCTION__"Render");
-        using namespace oglplus;
-        if (displayPlugin->isHmd() && currentShadertoy->vrShader) {
-            static vec3 eyeOffsets[2];
-            static vec3 transformedEyeOffsets[2];
-            auto headOrientation = glm::inverse(glm::quat_cast(mv.top()));
-            for_each_eye([&](Eye eye) {
-                eyeOffsets[eye] = vec3(displayPlugin->getEyeToHeadTransform(eye)[3]);
-                transformedEyeOffsets[eye] = headOrientation * eyeOffsets[eye];
-            });
-            for_each_eye([&](Eye eye) {
-                uvec4 vp(eye == Eye::Left ? 0 : _eyeRenderResolution.x, 0, _eyeRenderResolution.x, _eyeRenderResolution.y);
-                Context::Viewport(vp.x, vp.y, vp.z, vp.w);
-                pr.top() = displayPlugin->getProjection(eye, mat4());
-                auto eyeTransform = displayPlugin->getEyeToHeadTransform(eye);
-                mv.withPush([&] {
-                    auto translation = -1.0f * vec3(mv.top()[3]);
-                    translation = headOrientation  * translation;
-                    auto origin = translation + transformedEyeOffsets[eye];
-                    mv.top()[3] = vec4(0, 0, 0, 1);
-                    for (auto& pass : currentShadertoy->passes) {
-                        pass.bind(even);
-                        if (pass.vrProgram) {
-                            pass.vrProgram->Bind();
-                            if (pass.vrProgram) {
-                                ProgramUniform<vec3>(*pass.vrProgram, 3).TrySet(origin);
-                            }
-                        }
-                        // FIXME subdivide the view matrix and render in parts.
-                        renderGeometry(_skybox, pass.vrProgram ? pass.vrProgram : pass.program);
-                    }
-                });
-            });
-        } else {
-            pr.top() = mat4();
-            Context::Viewport(_size.x, _size.y);
-            Stacks::modelview().withIdentity([&] {
-                for (auto& pass : currentShadertoy->passes) {
-                    pass.bind(even);
-                    renderGeometry(_skybox, pass.program);
-                }
-            });
-        }
-    }
-
-    {
-        PROFILE_RANGE(__FUNCTION__" Transfer");
-        qApp->restoreDefaultFramebuffer();
-
-        if (displayPlugin->isHmd() && !currentShadertoy->vrShader) {
-            PROFILE_RANGE(__FUNCTION__" Hmd");
-            Context::Clear().ColorBuffer();
-            Stacks::withIdentity([&] {
-                for_each_eye([&](Eye eye) {
-                    uvec4 vp(eye == Eye::Left ? 0 : _size.x / 2, 0, _size.x / 2, _size.y);
-                    Context::Viewport(vp.x, vp.y, vp.z, vp.w);
-                    pr.top() = displayPlugin->getProjection(eye, mat4());
-                    mv.top() = glm::inverse(displayPlugin->getHeadPose(qApp->getFrameCount()));
-                    mv.translate(vec3(0, 0, -1));
-                    QOpenGLContext::currentContext()->functions()->glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, GetName(*_imageTexture));
-                    renderGeometry(_plane, _planeProgram, {});
-                });
-            });
-        } else {
-            PROFILE_RANGE(__FUNCTION__" Blit");
-            _imageFramebuffer->Bind(FramebufferTarget::Read);
-            oglplus::Context::BlitFramebuffer(0, 0, _renderResolution.x, _renderResolution.y, 0, 0, _size.x, _size.y, BufferSelectBit::ColorBuffer, BlitFilter::Linear);
-        }
-    }
-
-    for (int i = 0; i < 255; ++i) {
-        _keyboardState[i + 256] = 0;
-    }
-    ++_shaderFrame;
-}
-
 void Renderer::setup(const uvec2& size) {
     qApp->makePrimaryRenderingContextCurrent();
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &_uboAlignment);
@@ -622,33 +484,49 @@ void Renderer::setup(const uvec2& size) {
     compileProgram(_planeProgram, SIMPLE_TEXTURED_VS, SIMPLE_TEXTURED_FS);
     _plane = loadPlane(_planeProgram, VR_2D_ASPECT);
 
-    using namespace oglplus;
-    _uniformsBuffer = std::make_shared<oglplus::Buffer>();
-    _uniformsBuffer->Bind(BufferTarget::Uniform);
-    Buffer::Data(BufferTarget::Uniform, _shadertoyInputs.size(), _shadertoyInputs.data(), BufferUsage::StreamDraw);
-    Q_ASSERT(QOpenGLContext::currentContext());
+    {
+        using namespace oglplus;
+        _uniformsBuffer = std::make_shared<oglplus::Buffer>();
+        _uniformsBuffer->Bind(BufferTarget::Uniform);
+        Buffer::Data(BufferTarget::Uniform, _shadertoyInputs.size(), _shadertoyInputs.data(), BufferUsage::StreamDraw);
+        Q_ASSERT(QOpenGLContext::currentContext());
 
-    initTextureCache();
-    for (int i = 0; i < BUFFERS.size(); ++i) {
-        auto& cachedTexture = cachedTextures[BUFFERS.at(i)];
-        for (int j = 0; j < 2; ++j) {
-            auto& texture = cachedTexture.textures[j];
-            texture = std::make_shared<Texture>();
-            Context::Bound(TextureTarget::_2D, *texture)
-                .Image2D(0, PixelDataInternalFormat::RGBA16F, 10, 10, 0, PixelDataFormat::RGBA, PixelDataType::Float, nullptr);
-            // use odd textures on even framebuffers
-            auto& framebuffer = _bufferFramebuffers[i][j == 0 ? 1 : 0];
-            framebuffer = std::make_shared<Framebuffer>();
-            framebuffer->Bind(Framebuffer::Target::Draw);
-            framebuffer->AttachTexture(Framebuffer::Target::Draw, FramebufferAttachment::Color, *texture, 0);
+        _imageTexture = std::make_shared<Texture>();
+        Context::Bound(TextureTarget::_2D, *_imageTexture)
+            .Image2D(0, PixelDataInternalFormat::RGBA16F, 10, 10, 0, PixelDataFormat::RGBA, PixelDataType::Float, nullptr);
+        _imageFramebuffer = std::make_shared<Framebuffer>();
+        _imageFramebuffer->Bind(Framebuffer::Target::Draw);
+        _imageFramebuffer->AttachTexture(Framebuffer::Target::Draw, FramebufferAttachment::Color, *_imageTexture, 0);
+
+        for (int i = 0; i < BUFFERS.size(); ++i) {
+            auto& cachedTexture = cachedTextures[BUFFERS.at(i)];
+            for (int j = 0; j < 2; ++j) {
+                auto& texture = cachedTexture.textures[j];
+                texture = std::make_shared<Texture>();
+                Context::Bound(TextureTarget::_2D, *texture)
+                    .Image2D(0, PixelDataInternalFormat::RGBA16F, 10, 10, 0, PixelDataFormat::RGBA, PixelDataType::Float, nullptr);
+                // use odd textures on even framebuffers
+                auto& framebuffer = _bufferFramebuffers[i][j == 0 ? 1 : 0];
+                framebuffer = std::make_shared<Framebuffer>();
+                framebuffer->Bind(Framebuffer::Target::Draw);
+                framebuffer->AttachTexture(Framebuffer::Target::Draw, FramebufferAttachment::Color, *texture, 0);
+            }
+        }
+
+        {
+            // "/presets/previz/keyboard.png"
+            CachedTexture& cachedTexture = cachedTextures[KEYBOARD];
+            cachedTexture.resolution = uvec2(256, 3);
+            cachedTexture.textures[0] = std::make_shared<Texture>();
+            _keyboardState.resize(256 * 3);
+            _keyboardState.fill(0);
+            Context::Bound(TextureTarget::_2D, *cachedTexture.textures[0])
+                .Image2D(0, PixelDataInternalFormat::Red, 256, 3, 0, PixelDataFormat::Red, PixelDataType::UnsignedByte, nullptr);
         }
     }
-    _imageTexture = std::make_shared<Texture>();
-    Context::Bound(TextureTarget::_2D, *_imageTexture)
-        .Image2D(0, PixelDataInternalFormat::RGBA16F, 10, 10, 0, PixelDataFormat::RGBA, PixelDataType::Float, nullptr);
-    _imageFramebuffer = std::make_shared<Framebuffer>();
-    _imageFramebuffer->Bind(Framebuffer::Target::Draw);
-    _imageFramebuffer->AttachTexture(Framebuffer::Target::Draw, FramebufferAttachment::Color, *_imageTexture, 0);
+
+    _backgroundContext = new ThreadedGLCanvas(qApp->getPrimaryRenderingContext());
+    qApp->makePrimaryRenderingContextCurrent();
 
     // VR shader 
     //updateShader(globalModel->_cache->fetchShader("Xs3Gzf"));
@@ -659,6 +537,12 @@ void Renderer::setup(const uvec2& size) {
     //updateShader(globalModel->_cache->fetchShader("4ddGDB"));
     //updateShader(globalModel->_cache->fetchShader("test"));
     //build();
+
+    auto shader = new Shader(this);
+    auto defaultShaderPath = PathUtils::resourcesPath() + "/misc/defaultShadertoy.json";
+    auto defaultShader = ::Shader::parseFile(defaultShaderPath);
+    setShader(defaultShader);
+    build();
 
     Platform::addShutdownHook([&] {
         currentShadertoy.reset();
@@ -675,42 +559,53 @@ void Renderer::setup(const uvec2& size) {
         _imageTexture.reset();
         cachedTextures.clear();
     });
-    _size = size;
+    setTargetResolution(size);
     resize();
+    initTextureCache();
 }
 
+//initTextureCache();
+class LambdaRunnable : public QRunnable {
+public:
+    LambdaRunnable(std::function<void()> f) : _f(f) {
+        setAutoDelete(true);
+    }
+
+    void run() override {
+        _f();
+    }
+
+private:
+    std::function<void()> _f;
+};
+
 void Renderer::initTextureCache() {
-    using namespace oglplus;
-    for (int i = 0; i < TEXTURES.size(); ++i) {
-        QString path = TEXTURES.at(i);
-        qDebug() << "Loading texture from " << path;
-        CachedTexture& cachedTexture = cachedTextures[path];
-        cachedTexture.textures[0] = load2dTexture(":" + path, cachedTexture.resolution);
-    }
+    _backgroundContext->execute([=] {
+        using namespace oglplus;
+        for (int i = 0; i < TEXTURES.size(); ++i) {
+            QString path = TEXTURES.at(i);
+            qDebug() << "Loading texture from " << path;
+            CachedTexture& cachedTexture = cachedTextures[path];
+            cachedTexture.textures[0] = load2dTexture(PathUtils::resourcesPath() + path, cachedTexture.resolution);
+        }
 
-    for (int i = 0; i < CUBEMAPS.size(); ++i) {
-        QString pathTemplate = CUBEMAPS.at(i);
-        QString path = pathTemplate.arg(0);
-        qDebug() << "Processing path " << path;
-        CachedTexture& cachedTexture = cachedTextures[path];
-        cachedTexture.textures[0] = loadCubemapTexture([&](int face) {
-            QString texturePath = pathTemplate.arg(face);
-            QImage image = QImage(":" + texturePath).mirrored(false, true);
-            cachedTexture.resolution = toGlm(image.size());
-            return image;
-        });
-    }
-
-    {
-        // "/presets/previz/keyboard.png"
-        CachedTexture& cachedTexture = cachedTextures[KEYBOARD];
-        cachedTexture.resolution = uvec2(256, 3);
-        cachedTexture.textures[0] = std::make_shared<Texture>();
-        _keyboardState.resize(256 * 3);
-        _keyboardState.fill(0);
-        Context::Bound(TextureTarget::_2D, *cachedTexture.textures[0])
-            .Image2D(0, PixelDataInternalFormat::Red, 256, 3, 0, PixelDataFormat::Red, PixelDataType::UnsignedByte, nullptr);
-    }
+        for (int i = 0; i < CUBEMAPS.size(); ++i) {
+            QString pathTemplate = CUBEMAPS.at(i);
+            QString path = pathTemplate.arg(0);
+            qDebug() << "Processing path " << path;
+            CachedTexture& cachedTexture = cachedTextures[path];
+            cachedTexture.textures[0] = loadCubemapTexture([&](int face) {
+                QString texturePath = pathTemplate.arg(face);
+                QImage image = QImage(":" + texturePath).mirrored(false, true);
+                cachedTexture.resolution = toGlm(image.size());
+                return image;
+            });
+        }
+        //textureLoadCanvas->doneCurrent();
+        //textureLoadCanvas->deleteLater();
+        glFinish();
+        _texturesLoaded = true;
+    });
 
     //static void setOutput(Renderpass::Output output, bool even) {
     //    if (output == Renderpass::IMAGE) {
@@ -721,7 +616,238 @@ void Renderer::initTextureCache() {
     //        _framebuffers[index]->Bind(oglplus::Framebuffer::Target::Draw);
     //    }
     //}
+}
+
+void Renderer::resize() {
+    PROFILE_RANGE(__FUNCTION__);
+    if (!_targetResolution.x || !_targetResolution.y) {
+        return;
+    }
+
+    auto displayPlugin = qApp->getActiveDisplayPlugin();
+
+
+    auto oldRenderResolution = _renderResolution;
+    auto targetResolution = _targetResolution;
+    _eyeRenderResolution = _renderResolution = uvec2(vec2(targetResolution) * _renderScale);
+
+    if (displayPlugin->isHmd()) {
+        if (_targetResolutionDirty) {
+            _renderScale = 0.2f;
+        }
+        if (!currentShadertoy->vrShader) {
+            targetResolution = uvec2(800, 450);
+        }
+        _eyeRenderResolution.x /= 2;
+        float targetFramerate = displayPlugin->getTargetFrameRate();
+        // Allocate a budget of 63% of the total frametime for rendering.
+        // FIXME this should be improvable by segmenting VR frames
+        _targetGpuTime = (int)(1000 * (500.0f / targetFramerate));
+    } else {
+        _targetGpuTime = 0;
+    }
+    if (currentShadertoy && currentShadertoy->vrShader && displayPlugin->isHmd()) {
+    }
     
+    using namespace oglplus;
+    if (_targetResolutionDirty) {
+        for (int i = 0; i < BUFFERS.size(); ++i) {
+            auto& cachedTexture = cachedTextures[BUFFERS.at(i)];
+            for (int j = 0; j < 2; ++j) {
+                Context::Bound(TextureTarget::_2D, *cachedTexture.textures[j])
+                    .Image2D(0, PixelDataInternalFormat::RGBA16F, _targetResolution.x, _targetResolution.y, 0, PixelDataFormat::RGBA, PixelDataType::Float, nullptr);
+            }
+        }
+        Context::Bound(TextureTarget::_2D, *_imageTexture)
+            .MinFilter(TextureMinFilter::Nearest)
+            .Image2D(0, PixelDataInternalFormat::RGBA, _targetResolution.x, _targetResolution.y, 0, PixelDataFormat::RGBA, PixelDataType::Float, nullptr);
+    }
+
+    if (_renderResolution != oldRenderResolution) {
+        _pixels = _renderResolution.x * _renderResolution.y;
+        emit pixelsChanged();
+        for (int i = 0; i < BUFFERS.size(); ++i) {
+            auto& cachedTexture = cachedTextures[BUFFERS.at(i)];
+            cachedTexture.resolution = _renderResolution;
+        }
+            
+        if (currentShadertoy) {
+            for (auto& pass : currentShadertoy->passes) {
+                for (auto& input : pass.inputs) {
+                    if (input.input && input.input->ctype == Input::BUFFER) {
+                        input.resolution = vec3(_renderResolution, 1.0f);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Renderer::render() {
+    if (!currentShadertoy || !_targetResolution.x || !_targetResolution.y) {
+        return;
+    }
+
+    if (_resolutionDirty) {
+        resize();
+        _resolutionDirty = false;
+        _targetResolutionDirty = false;
+    }
+
+    auto displayPlugin = qApp->getActiveDisplayPlugin();
+
+    // Use odd textures as buffer inputs
+    bool even = 0 == (_shaderFrame % 2);
+    updateUniforms();
+
+    auto& mv = Stacks::modelview();
+    auto& pr = Stacks::projection();
+    
+    using namespace oglplus;
+    bool queryFrame { false };
+    {
+        if (!_query) {
+            _query = std::make_shared<Query>();
+            _query->Begin(Query::Target::TimeElapsed);
+            queryFrame = true;
+        }
+        PROFILE_RANGE(__FUNCTION__"Render");
+        using namespace oglplus;
+        if (displayPlugin->isHmd() && currentShadertoy->vrShader) {
+            static vec3 eyeOffsets[2];
+            static vec3 transformedEyeOffsets[2];
+            auto headOrientation = glm::inverse(glm::quat_cast(mv.top()));
+            for_each_eye([&](Eye eye) {
+                eyeOffsets[eye] = vec3(displayPlugin->getEyeToHeadTransform(eye)[3]);
+                transformedEyeOffsets[eye] = headOrientation * eyeOffsets[eye];
+            });
+            for_each_eye([&](Eye eye) {
+                uvec4 vp(eye == Eye::Left ? 0 : _eyeRenderResolution.x, 0, _eyeRenderResolution.x, _eyeRenderResolution.y);
+                Context::Viewport(vp.x, vp.y, vp.z, vp.w);
+                pr.top() = displayPlugin->getEyeProjection(eye, mat4());
+                auto eyeTransform = displayPlugin->getEyeToHeadTransform(eye);
+                mv.withPush([&] {
+                    auto translation = -1.0f * vec3(mv.top()[3]);
+                    translation = headOrientation  * translation;
+                    auto origin = translation + transformedEyeOffsets[eye];
+                    mv.top()[3] = vec4(0, 0, 0, 1);
+                    for (auto& pass : currentShadertoy->passes) {
+                        pass.bind(even);
+                        if (pass.vrProgram) {
+                            pass.vrProgram->Bind();
+                            if (pass.vrProgram) {
+                                ProgramUniform<vec3>(*pass.vrProgram, 3).TrySet(origin);
+                            }
+                        }
+                        static const uint8_t TILE_COUNT = 16;
+                        auto& program = pass.vrProgram;
+                        auto& shape = _skybox;
+                        program->Use();
+                        shape->Use();
+                        Mat4Uniform(*program, "ModelView").Set(Stacks::modelview().top());
+                        Mat4Uniform(*program, "Projection").Set(Stacks::projection().top());
+                        uvec2 tileSize = _renderResolution / uvec2(TILE_COUNT);
+                        glEnable(GL_SCISSOR_TEST);
+                        // FIXME subdivide the view matrix and render in parts.
+                        for (uint8_t x = 0; x < TILE_COUNT; ++x) {
+                            for (uint8_t y = 0; y < TILE_COUNT; ++y) {
+                                auto offset = tileSize * uvec2(x, y);
+                                glScissor(offset.x, offset.y, tileSize.x, tileSize.y);
+                                shape->Draw();
+                            }
+                        }
+                        glDisable(GL_SCISSOR_TEST);
+                        oglplus::NoProgram().Bind();
+                        oglplus::NoVertexArray().Bind();
+                        //renderGeometry(_skybox, pass.vrProgram ? pass.vrProgram : pass.program);
+                    }
+                });
+            });
+        } else {
+            pr.top() = mat4();
+            Context::Viewport(_renderResolution.x, _renderResolution.y);
+            Stacks::modelview().withIdentity([&] {
+                for (auto& pass : currentShadertoy->passes) {
+                    pass.bind(even);
+                    renderGeometry(_skybox, pass.program);
+                }
+            });
+        }
+    }
+
+    {
+        PROFILE_RANGE(__FUNCTION__" Transfer");
+        qApp->restoreDefaultFramebuffer();
+
+        if (displayPlugin->isHmd() && !currentShadertoy->vrShader) {
+            PROFILE_RANGE(__FUNCTION__" Hmd");
+            Context::Clear().ColorBuffer();
+            //_imageFramebuffer->Bind(FramebufferTarget::Read);
+
+            //oglplus::Context::BlitFramebuffer(
+            //    0, 0, _renderResolution.x, _renderResolution.y, 
+            //    0, 0, _targetResolution.x, _targetResolution.y, 
+            //    BufferSelectBit::ColorBuffer, BlitFilter::Linear);
+            //oglplus::Context::BlitFramebuffer(
+            //    _targetResolution.x / 2, 0, _renderResolution.x, _renderResolution.y, 
+            //    _targetResolution.x / 2, 0, _targetResolution.x, _targetResolution.y, 
+            //    BufferSelectBit::ColorBuffer, BlitFilter::Linear);
+            
+            oglplus::ProgramUniform<float>(*_planeProgram, 8).TrySet(_renderScale);
+            Stacks::withIdentity([&] {
+                for_each_eye([&](Eye eye) {
+                    uvec4 vp(eye == Eye::Left ? 0 : _targetResolution.x / 2, 0, _targetResolution.x / 2, _targetResolution.y);
+                    Context::Viewport(vp.x, vp.y, vp.z, vp.w);
+                    pr.top() = displayPlugin->getEyeProjection(eye, mat4());
+                    mv.top() = glm::inverse(displayPlugin->getHeadPose(qApp->getFrameCount()));
+                    mv.translate(vec3(0, 0, -1));
+                    QOpenGLContext::currentContext()->functions()->glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, GetName(*_imageTexture));
+                    renderGeometry(_plane, _planeProgram, {});
+                });
+            });
+        } else {
+            PROFILE_RANGE(__FUNCTION__" Blit");
+            _imageFramebuffer->Bind(FramebufferTarget::Read);
+            oglplus::Context::BlitFramebuffer(0, 0, _renderResolution.x, _renderResolution.y, 0, 0, _targetResolution.x, _targetResolution.y, BufferSelectBit::ColorBuffer, BlitFilter::Linear);
+        }
+    }
+    if (queryFrame) {
+        _query->End(Query::Target::TimeElapsed);
+    }
+
+    for (int i = 0; i < 255; ++i) {
+        _keyboardState[i + 256] = 0;
+    }
+    ++_shaderFrame;
+    if (_query && _query->ResultAvailable()) {
+        GLuint64 result;
+        _query->Result(result);
+        _query.reset();
+        result /= NSECS_PER_USEC;
+        _gpuFrameTime = (uint32_t)result;
+        emit gpuFrameTimeChanged();
+        if (_targetGpuTime != 0) {
+            // Increase slower than we decrease
+            if (_gpuFrameTime < _targetGpuTime) {
+                auto now = usecTimestampNow();
+                static auto lastIncreaseTime = now;
+                static const uint64_t MIN_INCREASE_INTERVAL = 100 * USECS_PER_MSEC;
+                if (now - lastIncreaseTime > MIN_INCREASE_INTERVAL) {
+                    lastIncreaseTime = now;
+                    setRenderScale(_renderScale * 1.05);
+                }
+            } else if (_gpuFrameTime > _targetGpuTime) {
+                setRenderScale(_renderScale * 0.9);
+            }
+        }
+    }
+
+    auto appFps = qApp->getFps();
+    if (_fps != appFps) {
+        _fps = appFps;
+        emit fpsChanged();
+    }
 }
 
 static float nsecsToSecs(uint64_t t) {
@@ -790,11 +916,11 @@ void Renderer::build() {
     }
 }
 
-void Renderer::setSize(const QSize& size) {
-    if (toGlm(size) != _size) {
-        _size = toGlm(size);
+void Renderer::setTargetResolution(const uvec2& targetResolution) {
+    if (targetResolution != _targetResolution) {
+        _targetResolution = targetResolution;
+        _targetResolutionDirty = true;
         _resolutionDirty = true;
-        restart();
         emit sizeChanged();
     }
 }
@@ -837,6 +963,19 @@ void Renderer::keyPressed(int key) {
             break;
         case Qt::Key_F4:
             // build source
+            break;
+
+        case Qt::Key_F5:
+            setRenderScale(std::max(_renderScale - 0.1f, 0.2f));
+            break;
+        case Qt::Key_F6:
+            setRenderScale(std::max(_renderScale - 0.01f, 0.2f));
+            break;
+        case Qt::Key_F7:
+            setRenderScale(std::min(_renderScale + 0.01f, 1.0f));
+            break;
+        case Qt::Key_F8:
+            setRenderScale(std::min(_renderScale + 0.1f, 1.0f));
             break;
 
         case Qt::Key_F9:
@@ -887,5 +1026,13 @@ void Renderer::restart() {
 }
 
 void Renderer::pause() {
+}
 
+void Renderer::setRenderScale(float newScale) {
+    newScale = glm::clamp(newScale, 0.2f, 1.0f);
+    if (newScale != _renderScale) {
+        _renderScale = newScale;
+        _resolutionDirty = true;
+        emit scaleChanged();
+    }
 }

@@ -10,7 +10,7 @@ import "."
 Window {
     id: root
     width: 800
-    height: 600
+    height: 800
     destroyOnCloseButton: false
     destroyOnInvisible: false
     resizable: true
