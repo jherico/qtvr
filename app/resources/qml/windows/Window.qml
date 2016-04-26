@@ -11,7 +11,7 @@ import "."
 // FIXME how to I enable dragging without allowing the window to lay outside
 // of the desktop?  How do I ensure when the desktop resizes all the windows
 // are still at least partially visible?
-Fadable {
+FocusScope {
     id: window
     // The Window size is the size of the content, while the frame
     // decorations can extend outside it.
@@ -19,6 +19,7 @@ Fadable {
     implicitWidth: content ? content.width : 0
     x: desktop.invalid_position; y: desktop.invalid_position;
     enabled: visible
+    focus: true
 
     signal windowDestroyed();
 

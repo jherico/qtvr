@@ -345,7 +345,7 @@ struct RenderpassGL {
 
     static ProgramPtr buildShader(const QString& source) {
         using namespace oglplus;
-        QByteArray qb = source.toLocal8Bit();
+        QByteArray qb = source.toUtf8();
         GLchar * fragmentSource = (GLchar*)qb.data();
         StrCRef src(fragmentSource);
         if (!_vertexShader) {
@@ -461,6 +461,11 @@ ShaderGLPtr currentShadertoy;
 
 void Renderer::setShader(const QVariant& shader) {
     _shader = qvariant_cast<::Shader*>(shader);
+    if (!_shader) {
+        _shader = new Shader();
+        _shader->parse(shader);
+    }
+    qDebug() << "Shader " << shader;
 }
 
 void Renderer::resize() {
@@ -472,7 +477,7 @@ void Renderer::resize() {
     auto oldRenderResolution = _renderResolution;
     auto displayPlugin = qApp->getActiveDisplayPlugin();
     auto targetResolution = _size;
-    if (displayPlugin->isHmd() && !currentShadertoy->vrShader) {
+    if (displayPlugin->isHmd() && (!currentShadertoy || !currentShadertoy->vrShader)) {
         targetResolution = uvec2(800, 450);
         _renderScale = 1.0f;
     }
@@ -481,7 +486,6 @@ void Renderer::resize() {
         _renderScale = 0.5f;
         _eyeRenderResolution.x /= 2;
     }
-
     
     using namespace oglplus;
     if (_renderResolution != oldRenderResolution) {
@@ -542,9 +546,12 @@ void Renderer::render() {
                 eyeOffsets[eye] = vec3(displayPlugin->getEyeToHeadTransform(eye)[3]);
                 transformedEyeOffsets[eye] = headOrientation * eyeOffsets[eye];
             });
+
+            Context::Enable(Capability::ScissorTest);
+
             for_each_eye([&](Eye eye) {
-                uvec4 vp(eye == Eye::Left ? 0 : _eyeRenderResolution.x, 0, _eyeRenderResolution.x, _eyeRenderResolution.y);
-                Context::Viewport(vp.x, vp.y, vp.z, vp.w);
+                uvec4 baseViewport(eye == Eye::Left ? 0 : _eyeRenderResolution.x, 0, _eyeRenderResolution.x, _eyeRenderResolution.y);
+                Context::Viewport(baseViewport.x, baseViewport.y, baseViewport.z, baseViewport.w);
                 pr.top() = displayPlugin->getEyeProjection(eye, mat4());
                 auto eyeTransform = displayPlugin->getEyeToHeadTransform(eye);
                 mv.withPush([&] {
@@ -560,11 +567,29 @@ void Renderer::render() {
                                 ProgramUniform<vec3>(*pass.vrProgram, 3).TrySet(origin);
                             }
                         }
-                        // FIXME subdivide the view matrix and render in parts.
-                        renderGeometry(_skybox, pass.vrProgram ? pass.vrProgram : pass.program);
+
+                        static const uint SUBDIVISION = 6;
+                        uvec2 passVpSize = _eyeRenderResolution / SUBDIVISION;
+                        passVpSize += 1;
+                        for (uint i = 0; i < SUBDIVISION; ++i) {
+                            for (uint j = 0; j < SUBDIVISION; ++j) {
+                                GLsizei x;
+                                SizeType pos();
+                                uvec2 vpPos = uvec2(baseViewport.x + i * passVpSize.x, baseViewport.y + j * passVpSize.y);
+                                uvec2 vpEnd = vpPos + passVpSize;
+                                vpEnd = glm::min(vpPos + _eyeRenderResolution, vpEnd);
+                                uvec2 vpSize = vpEnd - vpPos;
+                                Context::Scissor(vpPos.x, vpPos.y, vpSize.x, vpSize.y);
+                                renderGeometry(_skybox, pass.vrProgram ? pass.vrProgram : pass.program);
+                            }
+                        }
+
+                        
                     }
                 });
             });
+            Context::Disable(Capability::ScissorTest);
+
         } else {
             pr.top() = mat4();
             Context::Viewport(_size.x, _size.y);

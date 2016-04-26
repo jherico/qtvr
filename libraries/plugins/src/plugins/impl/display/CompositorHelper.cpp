@@ -257,7 +257,8 @@ glm::vec2 CompositorHelper::getReticlePosition() const {
         QMutexLocker locker(&_reticleLock);
         return _reticlePositionInHMD;
     }
-    return toGlm(_renderingWidget->mapFromGlobal(QCursor::pos()));
+    //return toGlm(_renderingWidget->mapFromGlobal(QCursor::pos()));
+    return vec2();
 }
 
 bool CompositorHelper::getReticleOverDesktop() const {
@@ -324,7 +325,7 @@ void CompositorHelper::setReticlePosition(const glm::vec2& position, bool sendFa
         }
     } else {
         const QPoint point(position.x, position.y);
-        QCursor::setPos(_renderingWidget->mapToGlobal(point));
+        //QCursor::setPos(_renderingWidget->mapToGlobal(point));
     }
 }
 

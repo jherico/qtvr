@@ -30,6 +30,7 @@ ApplicationWindow {
         anchors.fill: parent
     }
 
+    /*
     Rectangle {
         id: focusDebugger
         color: "#7500ffff"
@@ -45,6 +46,6 @@ ApplicationWindow {
             focusDebugger.x = r.x
             focusDebugger.y = r.y
         }
-
     }
+    */
 }

@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 ************************************************************************************/
-
+#if 0
 #include "Model.h"
 #include <QDebug>
 #include <QNetworkAccessManager>
@@ -66,3 +66,4 @@ QHash<int, QByteArray> Model::roleNames() const {
     roles[NameRole] = "modelName";
     return roles;
 }
+#endif

@@ -15,6 +15,8 @@ Desktop {
     property var currentShader;
     property var shaderModel: []
 
+    onFocusItemChanged: if (item === desktop) { restScopeTimer.start(); }
+
     Browser {
         id: browser;
         visible: false;
@@ -27,21 +29,50 @@ Desktop {
 
     onBrowserChanged: { console.log("Browser: " + browser) }
 
+    /*
     Button {
         onClicked: toggleBrowser();
         text: "Browser"
     }
+    */
     
     function loadShaderId(shaderId) {
         shadertoy.fetchShader(shaderId, loadShader)
     }
 
     function loadShader(shader) {
-        console.log("Got shader data " + shader )
         currentShader = shader;
         selectedShader(shader);
-        //renderer.setShader(shader);
-        //renderer.build();
+        // Fixme, use a signal instead
+        if (renderer) {
+            renderer.setShader(shader);
+            renderer.build();
+        }
+    }
+
+
+    FocusScope {
+        id: restScope
+        focus: true
+
+        // Works in VR and in Qt Creator
+        Keys.onPressed: {
+            switch (event.key) {
+                case Qt.Key_Escape:
+                case Qt.Key_Return:
+                case Qt.Key_Enter:
+                    desktop.toggleBrowser();
+                    break;
+                default: break;
+            }
+        }
+
+        Timer {
+            id: restScopeTimer
+            interval: 100
+            repeat: false
+            onTriggered: { restScope.focus = true; restScope.forceActiveFocus(); }
+        }
     }
 
 
@@ -49,48 +80,4 @@ Desktop {
         console.log("browser: " + browser);
         browser.visible = !browser.visible;
     }
-
-    Action {
-        id:  toggleBrowserAction
-        shortcut: "Ctrl+B"
-        onTriggered: toggleBrowser();
-    }
-
-    /*
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton
-        property point cursor: Qt.point(0, 0);
-        onMouseXChanged: {
-            cursor.x = mouseX;
-            renderer.mouseMoved(cursor);
-        }
-        onMouseYChanged: {
-            cursor.y = mouseY
-            renderer.mouseMoved(cursor);
-        }
-        onPressed: {
-            cursor = Qt.point(mouseX, mouseY);
-            renderer.mousePressed(cursor);
-        }
-        onReleased: {
-            cursor = Qt.point(0, 0);
-            renderer.mouseReleased();
-        }
-    }
-    Keys.onPressed: {
-        console.log("Pressed " + event.key);
-        renderer.keyPressed(event.key);
-        event.accepted = false;
-    }
-
-    Keys.onReleased: {
-        console.log("Released " + event.key);
-        renderer.keyReleased(event.key);
-        event.accepted = false;
-    }
-    */
-
-
-    focus: true
 }

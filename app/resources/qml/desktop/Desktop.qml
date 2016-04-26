@@ -3,7 +3,6 @@ import QtQuick.Controls 1.4
 import QtQuick.Dialogs 1.2 as OriginalDialogs;
 
 import "../dialogs"
-import "../menus"
 import "../js/Utils.js" as Utils
 
 // This is our primary 'desktop' object to which all VR dialogs and
@@ -12,6 +11,8 @@ FocusScope {
     id: desktop
     anchors.fill: parent;
     objectName: "desktop"
+
+    signal focusItemChanged(var item);
 
     readonly property int invalid_position: -9999;
     property rect recommendedRect: Qt.rect(0,0,0,0);
@@ -24,8 +25,7 @@ FocusScope {
     // Allows QML/JS to find the desktop through the parent chain
     property bool desktopRoot: true
 
-    // The VR version of the primary menu
-    property var rootMenu: Menu { objectName: "rootMenu" }
+    signal showDesktop();
 
     readonly property alias zLevels: zLevels
     QtObject {
@@ -39,6 +39,8 @@ FocusScope {
     QtObject {
         id: d
         property var knownWindows: []
+
+        Component.onCompleted: offscreenWindow.activeFocusItemChanged.connect(onWindowFocusChanged);
 
         function handleSizeChanged() {
             var oldRecommendedRect = recommendedRect;
@@ -104,6 +106,10 @@ FocusScope {
                 }
             }
             return currentWindows;
+        }
+
+        function getDesktopWindow(item) {
+            return findParentMatching(item, isTopLevelWindow)
         }
 
         function getTopLevelWindow(item) {
@@ -180,22 +186,8 @@ FocusScope {
             }
         }
 
-
-        Component.onCompleted: {
-            offscreenWindow.activeFocusItemChanged.connect(onWindowFocusChanged);
-            focusHack.start();
-        }
-
         function onWindowFocusChanged() {
-            console.log("Focus item is " + offscreenWindow.activeFocusItem);
-//            var focusedItem = offscreenWindow.activeFocusItem ;
-//            if (DebugQML && focusedItem) {
-//                var rect = desktop.mapFromItem(focusedItem, 0, 0, focusedItem.width, focusedItem.height);
-//                focusDebugger.x = rect.x;
-//                focusDebugger.y = rect.y;
-//                focusDebugger.width = rect.width
-//                focusDebugger.height = rect.height
-//            }
+            focusItemChanged(offscreenWindow.activeFocusItem);
         }
 
         function getRepositionChildren(predicate) {
@@ -380,31 +372,6 @@ FocusScope {
         return queryDialogBuilder.createObject(desktop, properties);
     }
 
-    MenuMouseHandler { id: menuPopperUpper }
-    function popupMenu(point) {
-        menuPopperUpper.popup(desktop, rootMenu.menus ? rootMenu.menus : rootMenu.items, point);
-    }
-
-    function toggleMenu(point) {
-        menuPopperUpper.toggle(desktop, rootMenu.menus ? rootMenu.menus : rootMenu.items, point);
-    }
-
-    Keys.onEscapePressed: {
-        if (menuPopperUpper.closeLastMenu()) {
-            event.accepted = true;
-            return;
-        }
-        event.accepted = false;
-    }
-
-    Keys.onLeftPressed: {
-        if (menuPopperUpper.closeLastMenu()) {
-            event.accepted = true;
-            return;
-        }
-        event.accepted = false;
-    }
-
     function unfocusWindows() {
         var windows = d.getTopLevelWindows();
         for (var i = 0; i < windows.length; ++i) {
@@ -412,21 +379,6 @@ FocusScope {
         }
         desktop.focus = true;
     }
-
-    Rectangle {
-        id: focusDebugger;
-        z: 9999; visible: false; color: "red"
-        ColorAnimation on color { from: "#7fffff00"; to: "#7f0000ff"; duration: 1000; loops: 9999 }
-    }
-
-    Action {
-        text: "Toggle Focus Debugger"
-        shortcut: "Ctrl+Shift+F"
-        enabled: DebugQML
-        onTriggered: focusDebugger.visible = !focusDebugger.visible
-    }
-
-    FocusHack { id: focusHack; }
 }
 
 

@@ -12,23 +12,3 @@
 //
 
 #include "ScriptValueUtils.h"
-
-bool isListOfStrings(const QScriptValue& arg) {
-    if (!arg.isArray()) {
-        return false;
-    }
-
-    auto lengthProperty = arg.property("length");
-    if (!lengthProperty.isNumber()) {
-        return false;
-    }
-
-    int length = lengthProperty.toInt32();
-    for (int i = 0; i < length; i++) {
-        if (!arg.property(i).isString()) {
-            return false;
-        }
-    }
-
-    return true;
-}

@@ -14,8 +14,4 @@
 #ifndef hifi_ScriptValueUtils_h
 #define hifi_ScriptValueUtils_h
 
-#include <QScriptValue>
-
-bool isListOfStrings(const QScriptValue& value);
-
 #endif // #define hifi_ScriptValueUtils_h

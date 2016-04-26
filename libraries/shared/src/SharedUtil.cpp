@@ -330,10 +330,6 @@ int unpackFloatFromByte(const unsigned char* buffer, float& value, float scaleBy
     return sizeof(holder);
 }
 
-bool isNaN(float value) {
-    return value != value;
-}
-
 // glm::abs() works for signed or unsigned types
 template <typename T>
 QString formatUsecTime(T usecs) {

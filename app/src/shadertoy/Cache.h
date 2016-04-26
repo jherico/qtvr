@@ -6,6 +6,7 @@
 #include <QtCore/QVariant>
 #include <QtCore/QSet>
 
+#if 0
 #include "types/Shader.h"
 
 namespace shadertoy {
@@ -26,5 +27,5 @@ namespace shadertoy {
         QHash<QString, Shader*> _shadersById;
         QStringList _shaderIds;
     };
-
 }
+#endif

@@ -3,17 +3,27 @@ import QtQuick.Controls 1.4
 
 import "."
 
-Rectangle {
+FocusScope {
     id: root
     width: 640
     height: image.y + image.height + 12
 
-    color: "white"
-    border { width: 2; color: "black";  }
-    radius: 4
-
     property var shaderId;
     property var shader;
+
+    Rectangle  {
+        anchors.fill: parent
+        color: root.activeFocus ? "white" : "grey"
+        border { width: 2; color: "black";  }
+        radius: 4
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        onClicked: {
+            root.focus = true
+        }
+    }
 
     function updateShader() {
         if (shaderId && !shader) {
@@ -45,7 +55,6 @@ Rectangle {
         width: 256; height: width / 16 * 9
         fillMode: Image.PreserveAspectFit
         source: "https://www.shadertoy.com/media/shaders/" + root.shaderId + ".jpg"
-        //source: "file:///c:/Users/bdavis/git/shadertoys/" + shaderId + ".jpg"
 
         BusyIndicator {
             anchors.centerIn: parent

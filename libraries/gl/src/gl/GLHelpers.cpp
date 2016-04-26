@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include <QtGui/QSurfaceFormat>
+#include <QtGui/QOpenGLContext>
 
 const QSurfaceFormat& getDefaultOpenGLSurfaceFormat() {
     static QSurfaceFormat format;
@@ -19,4 +20,22 @@ const QSurfaceFormat& getDefaultOpenGLSurfaceFormat() {
         QSurfaceFormat::setDefaultFormat(format);
     });
     return format;
+}
+
+QJsonObject getGLContextData() {
+    if (!QOpenGLContext::currentContext()) {
+        return QJsonObject();
+    }
+
+    QString glVersion = QString((const char*)glGetString(GL_VERSION));
+    QString glslVersion = QString((const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+    QString glVendor = QString((const char*)glGetString(GL_VENDOR));
+    QString glRenderer = QString((const char*)glGetString(GL_RENDERER));
+
+    return QJsonObject {
+        { "version", glVersion },
+        { "slVersion", glslVersion },
+        { "vendor", glVendor },
+        { "renderer", glRenderer },
+    };
 }

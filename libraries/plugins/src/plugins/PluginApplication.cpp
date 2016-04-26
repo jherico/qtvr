@@ -382,20 +382,8 @@ void PluginApplication::updateDisplayMode() {
     }
 
 
-    DisplayPluginPointer newDisplayPlugin = _newDisplayPlugin;
-
-    // Some plugins *cough* Oculus *cough* process message events from inside their
-    // display function, and we don't want to change the display plugin underneath
-    // the paintGL call, so we need to guard against that
-    if (_inPaint) {
-        qDebug() << "Deferring plugin switch until out of painting";
-        // Have the old plugin stop requesting renders
-        QTimer* timer = new QTimer();
-        timer->singleShot(500, [this, timer] {
-            timer->deleteLater();
-            updateDisplayMode();
-        });
-        return;
+    if (_displayPlugin) {
+        _displayPlugin->deactivate();
     }
 
     if (_newDisplayPlugin) {
@@ -403,13 +391,8 @@ void PluginApplication::updateDisplayMode() {
         _offscreenContext->makeCurrent();
     }
 
-    DisplayPluginPointer oldDisplayPlugin = _displayPlugin;
     _displayPlugin = _newDisplayPlugin;
     _newDisplayPlugin.reset();
-
-    if (oldDisplayPlugin) {
-        oldDisplayPlugin->deactivate();
-    }
 
     emit activeDisplayPluginChanged();
     resetSensors();

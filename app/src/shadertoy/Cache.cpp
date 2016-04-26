@@ -1,5 +1,6 @@
 #include "Cache.h"
 
+#if 0
 #include <QtCore/QRegularExpression>
 #include <QtCore/QStandardPaths>
 #include <QtCore/QJsonDocument>
@@ -69,3 +70,5 @@ QVariant Cache::setShader(const QString& shaderId, const QString& shaderJson) {
     _shadersById[shader->info->id] = shader;
     return QVariant::fromValue(shader);
 }
+
+#endif

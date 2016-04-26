@@ -20,7 +20,7 @@ limitations under the License.
 #pragma once
 #include <QAbstractListModel>
 #include "Cache.h"
-
+#if 0
 namespace shadertoy  {
 
     class Model : public QAbstractListModel {
@@ -49,3 +49,4 @@ namespace shadertoy  {
     };
 
 }
+#endif

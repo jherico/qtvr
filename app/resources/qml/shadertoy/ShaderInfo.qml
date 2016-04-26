@@ -12,6 +12,7 @@ Item {
 
     onShaderInfoChanged: {
         if (shaderInfo) {
+            tags = "";
             for (var tag in shaderInfo.tags) {
                 if (tags) {
                     tags += ", "

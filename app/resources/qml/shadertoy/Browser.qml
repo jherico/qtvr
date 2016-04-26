@@ -16,12 +16,17 @@ CenteredWindow {
 
     signal selectedShader(string shaderId);
 
+    function selectShader(shaderId) {
+        selectedShader(shaderId);
+        visible = false;
+    }
+
     property bool queryActive: false
     property bool ready: false
     property string query: ""
-    property string filter: ""
-    property string sort: "popular"
-    property string count: "25"
+    property string filter: "vr"
+    property string sort: "newest"
+    property string count: "Unlimited"
 
     Settings {
         category: "BrowserWindow"
@@ -34,7 +39,7 @@ CenteredWindow {
             filterSelection.currentIndex = filterSelection.model.indexOf(filter);
             sortSelection.currentIndex = sortSelection.model.indexOf(sort);
             countSelection.currentIndex = countSelection.model.indexOf(count);
-            root.searchField.text = root.query;
+            searchField.text = root.query;
 
             root.filter = Qt.binding(function() { return filterSelection.currentText });
             root.sort = Qt.binding(function() { return sortSelection.currentText });
@@ -47,6 +52,15 @@ CenteredWindow {
     onCountChanged: updateResults();
     onSortChanged: updateResults();
     onFilterChanged: updateResults();
+    onVisibleChanged: {
+        if (visible) {
+            if ((!desktop.shaderModel || desktop.shaderModel.length == 0)) {
+                updateResults();
+            }
+            flow.focus = true;
+            flow.forceActiveFocus();
+        }
+    }
 
     Rectangle {
         anchors.fill: parent;
@@ -111,7 +125,7 @@ CenteredWindow {
                 ComboBox {
                     id: countSelection
                     width: 48
-                    model: [ "5", "25", "50", "100" ]
+                    model: [ "5", "25", "100", "Unlimited" ]
                     KeyNavigation.tab: searchField
                     KeyNavigation.right: searchField
                     KeyNavigation.left: filterSelection
@@ -119,30 +133,50 @@ CenteredWindow {
                 }
             }
 
-            ScrollView {
-                clip: true;
-                anchors { top: searchField.bottom; topMargin: 8; bottom: parent.bottom; left: parent.left; right: parent.right }
+            Item {
                 id: flowContainer
+                clip: true
+                anchors { top: searchField.bottom; topMargin: 8; bottom: parent.bottom; left: parent.left; right: parent.right }
+
                 ListView {
                     id: flow
+                    anchors.fill: parent
                     model: desktop.shaderModel
+                    highlightMoveDuration: 10
+                    onCurrentIndexChanged: flow.positionViewAtIndex(currentIndex, ListView.Contain)
                     delegate: ShaderPreview {
+                        id: preview
                         width: flow.width
                         shaderId: desktop.shaderModel[index]
-                        Component.onCompleted: console.log("Shader preview for id " + shaderId);
+                        focus: flow.currentIndex === index
+                        Component.onCompleted: console.log("Shader preview for id " + shaderId + " " + index);
                         MouseArea {
-                            anchors.fill: parent;
-                            onDoubleClicked: {
-                                root.selectedShader(parent.shaderId);
-                                root.visible = false;
+                            anchors.fill: parent
+                            onClicked: {
+                                preview.focus = true;
+                                preview.forceActiveFocus();
+                                flow.currentIndex = index;
                             }
+                            onDoubleClicked: selectShader(parent.shaderId);
                         }
                     }
-
+                    Keys.onReturnPressed: selectShader(flow.currentItem.shaderId);
+                    Keys.onEscapePressed: root.visible = false;
                     KeyNavigation.right: countSelection
                     KeyNavigation.left: searchField
+                    Keys.onPressed: {
+                        switch (event.key) {
+                            case Qt.Key_End: flow.currentIndex = desktop.shaderModel.length - 1; break;
+                            case Qt.Key_Home: flow.currentIndex = 0; break;
+                            case Qt.Key_PageDown: Math.min(desktop.shaderModel.length - 1, flow.currentIndex += 5); break;
+                            case Qt.Key_PageUp: Math.max(0, flow.currentIndex -= 5); break;
+                            default: break;
+                        }
+                    }
                 }
             }
+
+            //NumberAnimation { id: anim; target: flow; property: "contentY"; duration: 250 }
         }
     }
 
@@ -153,8 +187,11 @@ CenteredWindow {
         console.log("Update results start");
         var params = {};
         params["sort"] = sort;
-        params["num"] = count;
+        if (count != "Unlimited") {
+            params["num"] = count;
+        }
         if (filter) { params["filter"] = filter }
+
         shadertoy.queryShaders(query, params, function(shaderIds){
             queryActive = false
             desktop.shaderModel = shaderIds || [];

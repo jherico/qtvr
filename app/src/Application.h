@@ -17,12 +17,13 @@ protected:
     void aboutToQuit() override;
     void initializeUI(const QUrl& desktopUrl) override;
 
-protected slots:
-    void loadShader(const QString& shaderId);
-    void onUpdateCode(const QString& code);
+//protected slots:
+//    void loadShaderObject(const QVariant& shader);
+//    void loadShader(const QString& shaderId);
+//    void onUpdateCode(const QString& code);
 
 private:
     shadertoy::Renderer _renderer;
-    std::shared_ptr<QSortFilterProxyModel> _proxy;
-    std::shared_ptr<shadertoy::Model> _model;
+//    std::shared_ptr<QSortFilterProxyModel> _proxy;
+//    std::shared_ptr<shadertoy::Model> _model;
 };
