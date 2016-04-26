@@ -1,7 +1,0 @@
-{
-    "name": "Neuron to Standard",
-    "channels": [
-        { "from": "Hydra.LeftHand", "to": "Standard.LeftHand" },
-        { "from": "Hydra.RightHand", "to": "Standard.RightHand" }
-    ]
-}

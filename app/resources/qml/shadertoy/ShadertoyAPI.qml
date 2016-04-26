@@ -4,38 +4,18 @@ QtObject {
     id: shadertoyAPI
     objectName: "shadertoyAPI"
     // API docs: https://www.shadertoy.com/api
-    property string apiKey: "Nt8tw7"
-
-    property bool offline: false
-
-    function fetchShaderInfo(shaderId, callback) {
-        fetchShader(shaderId, function(result) { callback(result.info) });
-    }
+    readonly property string apiKey: "Nt8tw7"
+    readonly property string apiBaseUrl: "https://www.shadertoy.com/api/v1";
 
     function fetchShaderList(callback) {
-        if (offline) {
-            callback(shadertoyCache.getShaderList());
-            return;
-        }
-
-        console.debug("Fetching all shader IDs");
         request("/shaders", {}, function(results) {
-            shadertoyCache.setShaderList(results);
             callback(JSON.parse(results).Results);
-        })
+        });
     }
 
-    function fetchShader(shaderId, callback, ignoreCache) {
-        console.debug("Fetch shader called with ")
-        if (!offline && (ignoreCache || !shadertoyCache.hasShader(shaderId))) {
-            callback(shadertoyCache.getShader(shaderId));
-            return;
-        }
-        console.debug("Shader not found in cache, fetching " + shaderId);
+    function fetchShader(shaderId, callback) {
         request("/shaders/" + shaderId, {}, function(shaderJson) {
-            console.log("Got API response for shader " + shaderId);
-            var shader = shadertoyCache.setShader(shaderId, shaderJson);
-            console.log("Parsed shader is " + shader);
+            var shader = JSON.parse(shaderJson).Shader;
             callback(shader);
         });
     }
@@ -51,26 +31,16 @@ QtObject {
     // Query shaders with filters: "vr", "soundoutput", "soundinput", "webcam", "multipass", "musicstream" (by default, there is no filter)
     // https://www.shadertoy.com/api/v1/shaders/query/string?filter=vr&key=appkey
     function queryShaders(query, params, callback) {
-        console.log("Calling shader query " + params)
         if (!callback) {
             callback = params;
             params = {}
         }
-        if (offline) {
-            console.log(shadertoyCache)
-            callback(shadertoyCache.queryShaders(query, params));
-            return;
-        }
 
         request("/shaders/query" + (query ? "/" + query : ""), callback ? params : {}, function(results) {
-            console.debug("Processing query results");
             var shaderList = JSON.parse(results).Results;
-            console.log(shaderList);
-            (callback ? callback : params)(shaderList);
+            callback(shaderList);
         });
     }
-
-    readonly property string apiBaseUrl: "https://www.shadertoy.com/api/v1";
 
     function request(path, params, callback) {
         var xhr = new XMLHttpRequest();
@@ -93,12 +63,9 @@ QtObject {
                 } else {
                     console.warn("Status result " + xhr.status)
                 }
-            } else {
-                console.log(xhr.readyState);
             }
         };
         xhr.open('GET', url, true);
         xhr.send('');
-
     }
 }

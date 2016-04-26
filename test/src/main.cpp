@@ -1,10 +1,11 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QtWebEngine>
-#include <QFileSystemModel>
 #include <QQmlNetworkAccessManagerFactory>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
 
-#include "../../app/src/shadertoy/Cache.h"
+#include <QDir>
+#include <QQmlContext>
 
 QString getRelativeDir(const QString& relativePath = ".") {
     QDir path(__FILE__); path.cdUp();
@@ -68,6 +69,7 @@ class MyQmlNetworkAccessManagerFactory : public QQmlNetworkAccessManagerFactory 
     }
 };
 
+#if 0
 class Persister : public QObject {
     Q_OBJECT
 public:
@@ -107,31 +109,34 @@ public slots:
     }
 
 };
+#endif
 
 int main(int argc, char *argv[]) {
+    qputenv("QT_IM_MODULE", QByteArray("qtvirtualkeyboard"));
     QGuiApplication app(argc, argv);
     app.setOrganizationName("Some Company");
     app.setOrganizationDomain("somecompany.com");
     app.setApplicationName("Amazing Application");
-    QDir::setCurrent(getRelativeDir(".."));
-    QGuiApplication::setOverrideCursor(Qt::BlankCursor);
-    QtWebEngine::initialize();
+    //QGuiApplication::setOverrideCursor(Qt::BlankCursor);
+    //QtWebEngine::initialize();
 
+
+    QDir::setCurrent(getRelativeDir(".."));
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("DebugQML", true);
     engine.setNetworkAccessManagerFactory(new MyQmlNetworkAccessManagerFactory());
     addImportPath(engine, "../qml");
     addImportPath(engine, "../../../app/resources/qml");
-    engine.load(QUrl(QStringLiteral("qml/main.qml")));
-    engine.load(QUrl(QStringLiteral("qml/Stubs.qml")));
+    engine.load(QUrl::fromLocalFile("C:/Users/bdavis/Git/core/test/qml/main.qml"));
+    engine.load(QUrl::fromLocalFile("C:/Users/bdavis/Git/core/test/qml/Stubs.qml"));
     setChild(engine, "Renderer");
     setChild(engine, "offscreenFlags");
 
-    auto persister = new Persister();
-    auto shadertoy = getChildByName(engine, "shadertoy");
-    QObject::connect(shadertoy, SIGNAL(receivedShaderList(QString)), persister, SLOT(persistShaderList(QString)));
-    QObject::connect(shadertoy, SIGNAL(receivedShader(QString)), persister, SLOT(persistShader(QString)));
+    //auto persister = new Persister();
+    //auto shadertoy = getChildByName(engine, "shadertoy");
+    //QObject::connect(shadertoy, SIGNAL(receivedShaderList(QString)), persister, SLOT(persistShaderList(QString)));
+    //QObject::connect(shadertoy, SIGNAL(receivedShader(QString)), persister, SLOT(persistShader(QString)));
     return app.exec();
 }
 

@@ -34,8 +34,9 @@
 #include <QtGui/QKeyEvent>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QDesktopServices>
-
 #include <QtGui/QOpenGLFramebufferObject>
+
+#include <QtQuick/QQuickWindow>
 
 #include <shared/NsightHelpers.h>
 #include <NumericalConstants.h>
@@ -72,23 +73,95 @@ static const int CAPPED_SIM_FRAME_PERIOD_MS = MSECS_PER_SECOND / CAPPED_SIM_FRAM
 PluginApplication::PluginApplication(int& argc, char** argv)
     : UiApplication(argc, argv) {
 
-    DependencyManager::set<UserInputMapper>();
     auto compositorHelper = DependencyManager::set<CompositorHelper>();
     compositorHelper->setRenderingSurface(getWindow());
-
     initializeGL();
     _offscreenContext->makeCurrent();
 
-    // A new controllerInput device used to reflect current values from the application state
-    _applicationStateDevice = std::make_shared<controller::StateController>();
+    //// Setup the userInputMapper with the actions
+    //connect(userInputMapper.data(), &UserInputMapper::actionEvent, [this](int action, float state) {
+    //    using namespace controller;
+    //    auto offscreenUi = getOffscreenUi();
+    //    if (offscreenUi->navigationFocused()) {
+    //        auto actionEnum = static_cast<Action>(action);
+    //        int key = Qt::Key_unknown;
+    //        static int lastKey = Qt::Key_unknown;
+    //        bool navAxis = false;
+    //        switch (actionEnum) {
+    //        case Action::UI_NAV_VERTICAL:
+    //            navAxis = true;
+    //            if (state > 0.0f) {
+    //                key = Qt::Key_Up;
+    //            } else if (state < 0.0f) {
+    //                key = Qt::Key_Down;
+    //            }
+    //            break;
 
-    //_applicationStateDevice->addInputVariant(QString("InHMD"), controller::StateController::ReadLambda([]() -> float {
-    //    return (float)qApp->getActiveDisplayPlugin()->isHmd();
-    //}));
+    //        case Action::UI_NAV_LATERAL:
+    //            navAxis = true;
+    //            if (state > 0.0f) {
+    //                key = Qt::Key_Right;
+    //            } else if (state < 0.0f) {
+    //                key = Qt::Key_Left;
+    //            }
+    //            break;
 
-    auto userInputMapper = DependencyManager::get<UserInputMapper>();
-    userInputMapper->registerDevice(_applicationStateDevice);
-    userInputMapper->loadDefaultMapping(userInputMapper->getStandardDeviceID());
+    //        case Action::UI_NAV_GROUP:
+    //            navAxis = true;
+    //            if (state > 0.0f) {
+    //                key = Qt::Key_Tab;
+    //            } else if (state < 0.0f) {
+    //                key = Qt::Key_Backtab;
+    //            }
+    //            break;
+
+    //        case Action::UI_NAV_BACK:
+    //            key = Qt::Key_Escape;
+    //            break;
+
+    //        case Action::UI_NAV_SELECT:
+    //            key = Qt::Key_Return;
+    //            break;
+    //        default:
+    //            break;
+    //        }
+
+    //        if (navAxis) {
+    //            if (lastKey != Qt::Key_unknown) {
+    //                QKeyEvent event(QEvent::KeyRelease, lastKey, Qt::NoModifier);
+    //                sendEvent(offscreenUi->getWindow(), &event);
+    //                lastKey = Qt::Key_unknown;
+    //            }
+
+    //            if (key != Qt::Key_unknown) {
+    //                QKeyEvent event(QEvent::KeyPress, key, Qt::NoModifier);
+    //                sendEvent(offscreenUi->getWindow(), &event);
+    //                lastKey = key;
+    //            }
+    //        } else if (key != Qt::Key_unknown) {
+    //            if (state) {
+    //                QKeyEvent event(QEvent::KeyPress, key, Qt::NoModifier);
+    //                sendEvent(offscreenUi->getWindow(), &event);
+    //            } else {
+    //                QKeyEvent event(QEvent::KeyRelease, key, Qt::NoModifier);
+    //                sendEvent(offscreenUi->getWindow(), &event);
+    //            }
+    //            return;
+    //        }
+    //    }
+
+    //    auto compositor = DependencyManager::get<CompositorHelper>();;
+    //    auto reticlePosition = compositor->getReticlePosition();
+    //    if (state) {
+    //        if (action == controller::toInt(controller::Action::UI_NAV_SELECT)) {
+    //            if (!offscreenUi->navigationFocused()) {
+    //                offscreenUi->toggleMenu(getWindow()->mapFromGlobal(QPoint(reticlePosition.x, reticlePosition.y)));
+    //            }
+    //        } else if (action == controller::toInt(controller::Action::TOGGLE_OVERLAY)) {
+    //            compositor->toggle();
+    //        }
+    //    }
+    //});
 }
 
 void PluginApplication::cleanupBeforeQuit() {
@@ -259,14 +332,15 @@ void PluginApplication::update(float deltaTime) {
 
     bool jointsCaptured = false;
     static controller::InputCalibrationData calibration;
-    //for (auto inputPlugin : PluginManager::getInstance()->getInputPlugins()) {
-    //    if (inputPlugin->isActive()) {
-    //        inputPlugin->pluginUpdate(deltaTime, calibration, jointsCaptured);
-    //        if (inputPlugin->isJointController()) {
-    //            jointsCaptured = true;
-    //        }
-    //    }
-    //}
+    for (auto inputPlugin : PluginManager::getInstance()->getInputPlugins()) {
+        auto rawPtr = inputPlugin.get();
+        if (inputPlugin->isActive()) {
+            inputPlugin->pluginUpdate(deltaTime, calibration, jointsCaptured);
+            if (inputPlugin->isJointController()) {
+                jointsCaptured = true;
+            }
+        }
+    }
 
     controller::Pose leftHand = userInputMapper->getPoseState(controller::Action::LEFT_HAND);
     controller::Pose rightHand = userInputMapper->getPoseState(controller::Action::RIGHT_HAND);
@@ -344,8 +418,12 @@ void PluginApplication::updateDisplayMode() {
     std::call_once(once, [&] {
         QStringList plugins;
         QString activePlugin;
+        auto offscreenUi = getOffscreenUi();
+        offscreenUi->addMenu({ "Display" });
         foreach(auto displayPlugin, displayPlugins) {
-            plugins << displayPlugin->getName();
+            auto menuItem = offscreenUi->addMenuItem({ "Display", displayPlugin->getName() });
+
+            connect(menuItem, SIGNAL(triggered()), this, SLOT(updateDisplayMode()));
 
             if (displayPlugin->isActive()) {
                 activePlugin = displayPlugin->getName();
@@ -355,7 +433,6 @@ void PluginApplication::updateDisplayMode() {
                 resizeGL();
             });
         }
-        qDebug() << plugins;
         //auto menu = getOffscreenUi()->getMenu();
         //QObject::connect(menu, SIGNAL(activateDisplayPlugin(QString)), this, SLOT(setActiveDisplayPlugin(QString)));
         //QMetaObject::invokeMethod(menu, "setDisplayPlugins", Q_ARG(QVariant, plugins), Q_ARG(QVariant, activePlugin));

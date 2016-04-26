@@ -105,7 +105,10 @@ const InputPluginList& PluginManager::getInputPlugins() {
         }
 
         for (auto plugin : inputPlugins) {
-            plugin->init();
+            if (plugin->isSupported()) {
+                plugin->init();
+                plugin->activate();
+            }
         }
     });
     return inputPlugins;

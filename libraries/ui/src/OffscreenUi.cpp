@@ -428,9 +428,9 @@ void OffscreenUi::unfocusWindows() {
     Q_ASSERT(invokeResult);
 }
 
-void OffscreenUi::toggleMenu(const QPoint& screenPosition) {
+void OffscreenUi::toggleMenu() {
     emit showDesktop(); // we really only want to do this if you're showing the menu, but for now this works
-    auto virtualPos = mapToVirtualScreen(screenPosition, nullptr);
+    QPoint virtualPos;
     QMetaObject::invokeMethod(_desktop, "toggleMenu",  Q_ARG(QVariant, virtualPos));
 }
 
@@ -561,8 +561,32 @@ bool OffscreenUi::eventFilter(QObject* originalDestination, QEvent* event) {
     return result;
 }
 
-unsigned int OffscreenUi::getMenuUserDataId() const {
-    return 0; // _vrMenu->_userDataId;
+QObject* OffscreenUi::getRootMenu() {
+    return qvariant_cast<QObject*>(getDesktop()->property("rootMenu"));
+}
+
+QObject* OffscreenUi::addMenu(const QStringList& path) {
+    QVariant addMenuResult;
+    bool invokeResult = QMetaObject::invokeMethod(_desktop, "addMenu",
+        Q_RETURN_ARG(QVariant, addMenuResult),
+        Q_ARG(QVariant, QVariant::fromValue(path)));
+
+    if (!invokeResult) {
+        return nullptr;
+    }
+    return qvariant_cast<QObject*>(addMenuResult);
+}
+
+QObject* OffscreenUi::addMenuItem(const QStringList& path) {
+    QVariant addMenuResult;
+    bool invokeResult = QMetaObject::invokeMethod(_desktop, "addMenuItem",
+        Q_RETURN_ARG(QVariant, addMenuResult),
+        Q_ARG(QVariant, QVariant::fromValue(path)));
+
+    if (!invokeResult) {
+        return nullptr;
+    }
+    return qvariant_cast<QObject*>(addMenuResult);
 }
 
 #include "OffscreenUi.moc"

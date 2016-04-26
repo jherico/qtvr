@@ -1,6 +1,5 @@
 {
     "name": "Standard to Action",
-    "when": "Application.NavigationFocused",
     "channels": [
         { "from": "Standard.DU", "to": "Actions.UiNavVertical" },
         { "from": "Standard.DD", "to": "Actions.UiNavVertical", "filters": "invert" },

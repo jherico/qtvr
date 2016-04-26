@@ -41,6 +41,7 @@
 #include <oglplus/bound/renderbuffer.hpp>
 #include <oglplus/shapes/wrapper.hpp>
 #include <oglplus/interop/glm.hpp>
+#include <GL/glew.h>
 
 #ifdef _WIN32
 #pragma warning(pop)

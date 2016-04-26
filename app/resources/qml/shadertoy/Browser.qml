@@ -7,48 +7,46 @@ import "../windows"
 import "../controls"
 import "."
 
-Window {
+CenteredWindow {
     id: root
     width: 900
     height: 640
-    destroyOnCloseButton: false
-    destroyOnInvisible: false
-    resizable: true
     objectName: "Browser"
+    closable: false
 
     signal selectedShader(string shaderId);
 
+    property bool queryActive: false
     property bool ready: false
     property string query: ""
     property string filter: ""
     property string sort: "popular"
     property string count: "25"
 
-    Component.onCompleted: {
-        filterSelection.currentIndex = filterSelection.model.indexOf(filter);
-        filter = Qt.binding(function() { return filterSelection.currentText });
-        sortSelection.currentIndex = sortSelection.model.indexOf(sort);
-        sort = Qt.binding(function() { return sortSelection.currentText });
-        countSelection.currentIndex = countSelection.model.indexOf(count);
-        count = Qt.binding(function() { return countSelection.currentText });
-        searchField.text = query;
-        query = Qt.binding(function() { return searchField.text });
-        ready = true;
+    Settings {
+        category: "BrowserWindow"
+        property alias count: root.count
+        property alias filter: root.filter
+        property alias sort: root.sort
+        property alias query: root.query
+
+        Component.onCompleted: {
+            filterSelection.currentIndex = filterSelection.model.indexOf(filter);
+            sortSelection.currentIndex = sortSelection.model.indexOf(sort);
+            countSelection.currentIndex = countSelection.model.indexOf(count);
+            root.searchField.text = root.query;
+
+            root.filter = Qt.binding(function() { return filterSelection.currentText });
+            root.sort = Qt.binding(function() { return sortSelection.currentText });
+            root.count = Qt.binding(function() { return countSelection.currentText });
+            root.query = Qt.binding(function() { return searchField.text });
+            root.ready = true;
+        }
     }
 
     onCountChanged: updateResults();
     onSortChanged: updateResults();
     onFilterChanged: updateResults();
-
-    Settings {
-        category: "BrowserWindow"
-        property alias x: root.x
-        property alias y: root.y
-        property alias count: root.count
-        property alias filter: root.filter
-        property alias sort: root.sort
-        property alias query: root.query
-    }
 
     Rectangle {
         anchors.fill: parent;
@@ -69,6 +67,11 @@ Window {
                     interval: 1500; repeat: false; running: false
                     onTriggered: updateResults();
                 }
+
+                KeyNavigation.tab: sortSelection
+                KeyNavigation.right: sortSelection
+                KeyNavigation.left: countSelection
+                KeyNavigation.down: flow
             }
 
             Row {
@@ -81,6 +84,11 @@ Window {
                     id: sortSelection
                     width: 64
                     model: shadertoy.sortFields
+
+                    KeyNavigation.tab: filterSelection
+                    KeyNavigation.right: filterSelection
+                    KeyNavigation.left: searchField
+                    KeyNavigation.down: flow
                 }
 
                 Item { height: 1; width: 8 }
@@ -90,7 +98,12 @@ Window {
                     id: filterSelection
                     width: 100
                     model: shadertoy.filterFields
+                    KeyNavigation.tab: countSelection
+                    KeyNavigation.right: countSelection
+                    KeyNavigation.left: sortSelection
+                    KeyNavigation.down: flow
                 }
+
 
                 Item { height: 1; width: 8 }
 
@@ -99,7 +112,10 @@ Window {
                     id: countSelection
                     width: 48
                     model: [ "5", "25", "50", "100" ]
-                    currentIndex: 1
+                    KeyNavigation.tab: searchField
+                    KeyNavigation.right: searchField
+                    KeyNavigation.left: filterSelection
+                    KeyNavigation.down: flow
                 }
             }
 
@@ -109,12 +125,11 @@ Window {
                 id: flowContainer
                 ListView {
                     id: flow
-                    model: shaderModel
+                    model: desktop.shaderModel
                     delegate: ShaderPreview {
                         width: flow.width
-                        shader: modelShader
-                        shaderId: modelShaderId
-                        Component.onCompleted: console.log("Shader " + shader + " shader id " + shaderId);
+                        shaderId: desktop.shaderModel[index]
+                        Component.onCompleted: console.log("Shader preview for id " + shaderId);
                         MouseArea {
                             anchors.fill: parent;
                             onDoubleClicked: {
@@ -123,27 +138,26 @@ Window {
                             }
                         }
                     }
+
+                    KeyNavigation.right: countSelection
+                    KeyNavigation.left: searchField
                 }
             }
         }
     }
 
     function updateResults() {
-        console.log("Update results start");
-        if (!ready) {
+        if (!ready || queryActive) {
             return;
         }
+        console.log("Update results start");
         var params = {};
         params["sort"] = sort;
         params["num"] = count;
         if (filter) { params["filter"] = filter }
-        shadertoy.api.queryShaders(query, params, processResults);
-        console.log("Update results end");
-    }
-
-    function processResults(shaderIds) {
-        console.log("processResults start");
-        shaderModel.shaderIds = shaderIds || [];
-        console.log("processResults end");
+        shadertoy.queryShaders(query, params, function(shaderIds){
+            queryActive = false
+            desktop.shaderModel = shaderIds || [];
+        });
     }
 }

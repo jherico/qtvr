@@ -14,7 +14,6 @@ ApplicationWindow {
     width: 1280
     height: 720
     title: qsTr("Scratch App")
-    menuBar: desktop.rootMenu
 
     Settings {
         category: "MainTestWindow"
@@ -29,5 +28,23 @@ ApplicationWindow {
     AppDesktop {
         id: desktop
         anchors.fill: parent
+    }
+
+    Rectangle {
+        id: focusDebugger
+        color: "#7500ffff"
+    }
+
+    onActiveFocusItemChanged: {
+        var focusItem = offscreenWindow.activeFocusItem
+        console.log("Focus item is " + focusItem);
+        if (focusItem) {
+            var r = desktop.mapFromItem(focusItem, 0, 0, focusItem.width, focusItem.height)
+            focusDebugger.width = r.width
+            focusDebugger.height = r.height
+            focusDebugger.x = r.x
+            focusDebugger.y = r.y
+        }
+
     }
 }

@@ -18,7 +18,7 @@ Rectangle {
     function updateShader() {
         if (shaderId && !shader) {
             console.debug("Fetching shader information for " + shaderId);
-            shadertoy.api.fetchShader(root.shaderId, function(shader) {
+            shadertoy.fetchShader(shaderId, function(shader) {
                 console.log("Shader fetched for " + shaderId);
                 root.shader = shader;
             });
@@ -27,6 +27,9 @@ Rectangle {
 
     Component.onCompleted: updateShader();
     onShaderIdChanged: updateShader();
+    onShaderChanged: {
+        console.log("Shader is now " + shader);
+    }
 
     Text {
         id: label
@@ -41,8 +44,8 @@ Rectangle {
         anchors { left: parent.left; top: label.bottom; margins: 8 }
         width: 256; height: width / 16 * 9
         fillMode: Image.PreserveAspectFit
-        //source: "https://www.shadertoy.com/media/shaders/" + root.shaderId + ".jpg"
-        source: "file:///c:/Users/bdavis/git/shadertoys/" + shaderId + ".jpg"
+        source: "https://www.shadertoy.com/media/shaders/" + root.shaderId + ".jpg"
+        //source: "file:///c:/Users/bdavis/git/shadertoys/" + shaderId + ".jpg"
 
         BusyIndicator {
             anchors.centerIn: parent

@@ -5,15 +5,7 @@ import "."
 QtObject {
     id: shadertoy
     objectName: "shadertoy"
-
-    signal receivedShaderList(string shaderList)
-    signal receivedShader(string shaderList)
-
-    property var activeTextures: [ misc[0], misc[0], misc[0], misc[0] ]
     property var api: ShadertoyAPI {}
-    Component.onCompleted: {
-        api.fetchShaderList();
-    }
 
     readonly property var textures: [
         {
@@ -99,71 +91,47 @@ QtObject {
 
     readonly property var filterFields: [ "none", "vr", "soundoutput", "soundinput", "webcam", "multipass", "musicstream" ]
 
-    // API docs: https://www.shadertoy.com/api
-    property string apiKey: "Nt8tw7"
-
-    function fetchShaderList(callback) {
-        request("/shaders", {}, function(results) {
-            receivedShaderList(results);
-            callback(JSON.parse(results));
-        })
+    property var cache: QtObject {
+        property var shaderIds
+        property var shadersById: ({})
+        property var queryResultsByQueryKey: ({})
     }
 
-    function fetchShader(shaderId, callback) {
-        if (shadersInfoCache[shaderId]) {
-            console.log("Got cached data for " + shaderId);
-            callback(shadersInfoCache[shaderId]);
-            return;
-        }
-
-        request("/shaders/" + shaderId, {}, function(shaderInfo) {
-            console.log("Got network data for " + shaderId);
-            receivedShader(shaderInfo);
-            shaderInfo = JSON.parse(shaderInfo)
-            shadersInfoCache[shaderId] = shaderInfo;
-            callback(shaderInfo);
-        })
-    }
-
-    // Sort
-    // Query shaders sorted by "name", "love", "popular", "newest", "hot" (by default, it uses "popular").
-    // https://www.shadertoy.com/api/v1/shaders/query/string?sort=newest&key=appkey
-
-    // Pagination
-    // https://www.shadertoy.com/api/v1/shaders/query/string?from=5&num=25&key=appkey
-
-    // Filter
-    // Query shaders with filters: "vr", "soundoutput", "soundinput", "webcam", "multipass", "musicstream" (by default, there is no filter)
-    // https://www.shadertoy.com/api/v1/shaders/query/string?filter=vr&key=appkey
-    function searchShaders(query, params, callback) {
-
-        request("/shaders/query" + (query ? "/" + query : ""), callback ? params : {}, function(results) {
-            var shaderInfo = JSON.parse(results);
-            (callback ? callback : params)(shaderInfo);
+    function fetchShaderInfo(shaderId, callback) {
+        fetchShader(shaderId, function(shader) {
+            callback(shader.info);
         });
     }
 
-    readonly property string apiBaseUrl: "https://www.shadertoy.com/api/v1";
-
-    function request(path, params, callback) {
-        var xhr = new XMLHttpRequest();
-        var queryString = "key=" + apiKey;
-        var queryParamNames = Object.keys(params);
-        for (var i = 0; i < queryParamNames.length; ++i) {
-            var name = queryParamNames[i];
-            if (name === "filter" && params[name] === "none") {
-                continue;
-            }
-            queryString += "&" + name + "=" + params[name];
+    function fetchShaderList(callback) {
+        if (cache.shaderIds) {
+            callback(cache.shaderIds);
+            return;
         }
 
-        var url = apiBaseUrl + path + "?" + queryString;
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                callback(xhr.responseText);
+        api.fetchShaderList(function(shaderIds) {
+            if (!cache.shaderIds) {
+                cache.shaderIds = shaderIds;
             }
-        };
-        xhr.open('GET', url, true);
-        xhr.send('');
+            callback(cache.shaderIds);
+        });
+    }
+
+    function fetchShader(shaderId, callback) {
+        if (shaderId in cache.shadersById) {
+            callback(cache.shadersById[shaderId]);
+            return;
+        }
+
+        api.fetchShader(shaderId, function(shader){
+            if (!(shaderId in cache.shadersById)) {
+                cache.shadersById[shaderId] = shader;
+            }
+            callback(cache.shadersById[shaderId]);
+        });
+    }
+
+    function queryShaders(query, params, callback) {
+        api.queryShaders(query, params, callback);
     }
 }

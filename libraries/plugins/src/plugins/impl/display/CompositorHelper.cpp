@@ -485,7 +485,8 @@ glm::mat4 CompositorHelper::getReticleTransform(const glm::mat4& eyePose, const 
         result = glm::scale(pointerTransform, reticleScale);
     } else {
         static const float CURSOR_PIXEL_SIZE = 32.0f;
-        const auto canvasSize = vec2(toGlm(_renderingSurface->size()));;
+        const auto canvasSize = vec2(toGlm(_renderingSurface->size()));
+        auto cursorPos = QCursor::pos();
         vec2 mousePosition = toGlm(_renderingSurface->mapFromGlobal(QCursor::pos()));
         mousePosition /= canvasSize;
         mousePosition *= 2.0;

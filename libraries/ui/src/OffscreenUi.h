@@ -43,13 +43,16 @@ public:
     bool navigationFocused();
     void setNavigationFocused(bool focused);
     void unfocusWindows();
-    void toggleMenu(const QPoint& screenCoordinates);
+    void toggleMenu();
 
     bool eventFilter(QObject* originalDestination, QEvent* event) override;
     void addMenuInitializer(std::function<void(VrMenu*)> f);
 
     QQuickItem* getDesktop();
     QQuickItem* getToolWindow();
+    QObject* getRootMenu();
+    QObject* addMenu(const QStringList& path);
+    QObject* addMenuItem(const QStringList& path);
 
     enum Icon {
         ICON_NONE = 0,
@@ -132,8 +135,6 @@ public:
 
     static QString getText(const Icon icon, const QString & title, const QString & label, const QString & text = QString(), bool * ok = 0);
     static QString getItem(const Icon icon, const QString & title, const QString & label, const QStringList & items, int current = 0, bool editable = true, bool * ok = 0);
-
-    unsigned int getMenuUserDataId() const;
 
 signals:
     void showDesktop();

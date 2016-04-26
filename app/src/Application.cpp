@@ -24,8 +24,35 @@
 #include "shadertoy/Cache.h"
 #include "shadertoy/types/Shader.h"
 
+#include <shared/JSONHelpers.h>
+#include <QtCore/QJSonObject>
+#include <QtCore/QJSonArray>
+#include <QtCore/QDirIterator>
+#include <QtCore/QDir>
+
 Application::Application(int& argc, char** argv) : Parent(argc, argv) {
-    Q_INIT_RESOURCE(ShadertoyVR);
+    {
+        static const QString ROOT = "C:/Users/bdavis/Git/dreaming/assets/simple";
+        static const QDir ROOT_DIR(ROOT);
+        QDirIterator it(ROOT, QStringList() << "*.fbx", QDir::Files, QDirIterator::Subdirectories);
+        QJsonArray allModels;
+        while (it.hasNext()) {
+            QString path = it.next();
+            QString relativePath = ROOT_DIR.relativeFilePath(path);
+            QJsonObject object;
+            object.insert("model", relativePath);
+            object.insert("scale", 1.0f);
+            allModels.append(object);
+            qDebug() << relativePath;
+        }
+        {
+            QFile output(ROOT + "/models.json");
+            output.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+            output.write(QJsonDocument(allModels).toJson(QJsonDocument::Indented));
+            output.close();
+        }
+    }
+    // Q_INIT_RESOURCE(ShadertoyVR);
     //const QString SHADERS_DIR = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/git/shadertoys/";
 
     //for (auto shaderFile : QDir(SHADERS_DIR).entryList(QStringList(QString("*.json")))) {
@@ -47,9 +74,10 @@ Application::Application(int& argc, char** argv) : Parent(argc, argv) {
     _proxy->setSourceModel(_model.get());
 
     //getWindow()->setGeometry(0, 0, 1280, 720);
-    getWindow()->setGeometry(2020, 100, 1280, 720);
+    //getWindow()->setGeometry(2020, 100, 640, 480);
+    getWindow()->setGeometry(100, -980, 1440, 800);
     //getWindow()->setGeometry(100, 100, 1280, 720);
-    initializeUI(QUrl::fromLocalFile("shadertoy/AppDesktop.qml"));
+    initializeUI(QUrl::fromLocalFile("C:/Users/bdavis/Git/core/app/resources/qml/shadertoy/AppDesktop.qml"));
 
     makePrimaryRenderingContextCurrent();
     _renderer.setup(uvec2(1280, 720));
@@ -60,15 +88,17 @@ void Application::initializeUI(const QUrl& desktopUrl) {
     qmlRegisterType<Renderpass>("Shadertoy", 1, 0, "Renderpass");
     qmlRegisterType<ShaderInfo>("Shadertoy", 1, 0, "ShaderInfo");
     qmlRegisterType<Shader>("Shadertoy", 1, 0, "Shader");
+    qDebug() << desktopUrl;
     Parent::initializeUI(desktopUrl);
 
     getActiveDisplayPlugin()->idle();
     auto offscreenUi = getOffscreenUi();
     auto rootContext = offscreenUi->getRootContext();
     rootContext->setContextProperty("renderer", &_renderer);
+    auto desktop = offscreenUi->getDesktop();
+    //desktop->setProperty("shaderModel", QVariant::fromValue(_model.get()));
     rootContext->setContextProperty("shaderModel", _model.get());
     rootContext->setContextProperty("shadertoyCache", _model->_cache);
-    auto desktop = offscreenUi->getDesktop();
     connect(desktop, SIGNAL(updateCode(QString)), this, SLOT(onUpdateCode(const QString&)));
 }
 
