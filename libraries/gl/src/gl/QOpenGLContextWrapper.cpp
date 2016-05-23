@@ -13,6 +13,17 @@
 
 #include <QOpenGLContext>
 
+uint32_t QOpenGLContextWrapper::currentContextVersion() {
+    QOpenGLContext* context = QOpenGLContext::currentContext();
+    if (!context) {
+        return 0;
+    }
+    auto format = context->format();
+    auto version = (format.majorVersion() << 8) + format.minorVersion();
+    return version;
+}
+
+
 QOpenGLContext* QOpenGLContextWrapper::currentContext() {
     return QOpenGLContext::currentContext();
 }
@@ -57,11 +68,7 @@ bool QOpenGLContextWrapper::isCurrentContext() const {
     return QOpenGLContext::currentContext() == _context;
 }
 
-void QOpenGLContextWrapper::deleteLater() {
-    _context->deleteLater();
-    _context = nullptr;
-}
-
-void QOpenGLContextWrapper::moveToThread(QThread *thread) {
+void QOpenGLContextWrapper::moveToThread(QThread* thread) {
     _context->moveToThread(thread);
 }
+

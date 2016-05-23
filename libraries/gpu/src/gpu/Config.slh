@@ -1,0 +1,23 @@
+<!
+//  Config.slh
+//  interface/src
+//
+//  Created by Sam Gateau on 12/17/14.
+//  Copyright 2013 High Fidelity, Inc.
+//
+//  Distributed under the Apache License, Version 2.0.
+//  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
+!>
+<@if not GPU_CONFIG_SLH@>
+<@def GPU_CONFIG_SLH@>
+
+<@if GLPROFILE == PC_GL @>
+    <@def GPU_FEATURE_PROFILE GPU_CORE@>
+    <@def VERSION_HEADER //PC 410 core@>
+<@elif GLPROFILE == MAC_GL @>
+    <@def GPU_FEATURE_PROFILE GPU_CORE@>
+    <@def VERSION_HEADER //MAC 410 core@>
+<@else@>
+    <@def GPU_FEATURE_PROFILE GPU_CORE@>
+    <@def VERSION_HEADER //410 core@>
+<@endif@>
